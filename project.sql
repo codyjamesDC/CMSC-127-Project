@@ -1,8 +1,8 @@
-CREATE OR REPLACE USER 'ltomgr'@'localhost' IDENTIFIED BY 'cody'; --password: cody
+CREATE OR REPLACE USER 'ltomgr'@'localhost' IDENTIFIED BY 'SHAN'; --password: shanmykel
 
 DROP DATABASE IF EXISTS `vehiclemanager`;
 CREATE DATABASE IF NOT EXISTS `vehiclemanager`;
-GRANT ALL ON hospital.* TO 'ltomgr'@'localhost';
+GRANT ALL ON vehiclemanager.* TO 'ltomgr'@'localhost';
 USE `vehiclemanager`;
 
 --DEFINE DATABASES HERE
