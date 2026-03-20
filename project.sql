@@ -119,10 +119,10 @@ CREATE TABLE IF NOT EXISTS `violation_ticket` (
 -- VIOLATION
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `violation` (
-    violation_id    INT(10)         NOT NULL AUTO_INCREMENT,
-    violation_name  VARCHAR(60)     NOT NULL,
+    violation_id    INT             NOT NULL AUTO_INCREMENT,
+    violation_name  VARCHAR(100)    NOT NULL,
     fine_amount     DECIMAL(10,2)   NOT NULL,
-    ticket_id       INT(10)         NOT NULL,
+    ticket_id       INT             NOT NULL,
     PRIMARY KEY (`violation_id`),
     FOREIGN KEY (`ticket_id`) REFERENCES `violation_ticket`(`ticket_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
