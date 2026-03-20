@@ -103,10 +103,10 @@ CREATE TABLE IF NOT EXISTS `vehicle_registration` (
 -- VIOLATION TICKET
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `violation_ticket` (
-    ticket_id               INT(10)         NOT NULL AUTO_INCREMENT,
+    ticket_id               INT             NOT NULL AUTO_INCREMENT,
     location                VARCHAR(100)    NOT NULL,
     date                    DATE            NOT NULL,
-    violation_status        VARCHAR(20)     NOT NULL DEFAULT 'Unpaid',
+    violation_status        VARCHAR(10)     NOT NULL DEFAULT 'Unpaid',
     apprehending_officer    VARCHAR(60)     NOT NULL,
     license_no              VARCHAR(15)     NOT NULL,
     plate_no                VARCHAR(10)     NOT NULL,
