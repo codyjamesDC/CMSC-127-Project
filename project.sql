@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `driver` (
     mname                   VARCHAR(20)
 
     bday                    DATE            NOT NULL,
-    sex                     CHAR(1)      NOT NULL,
+    sex                     CHAR(1)         NOT NULL,
 
     nationality             VARCHAR(30)     NOT NULL,
     height_cm               DECIMAL(5,2)    NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `driver` (
     father_mname            VARCHAR(20),
     emrg_contact_person     VARCHAR(60)     NOT NULL,
     emrg_contact_no         VARCHAR(15)     NOT NULL,
-    license_type            VARCHAR(10)     NOT NULL,
+    license_type            VARCHAR(20)     NOT NULL,
     license_status          VARCHAR(10)     NOT NULL DEFAULT 'Active',
     issued_date             DATE            NOT NULL,
     expiry_date             DATE            NOT NULL,
@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS `vehicle` (
     year            YEAR            NOT NULL,
     license_no      VARCHAR(15)     NOT NULL,
     PRIMARY KEY (`plate_no`, `engine_no`, `chassis_no`),
+    UNIQUE KEY `uq_plate_no` (`plate_no`),
     FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
