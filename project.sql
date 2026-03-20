@@ -13,9 +13,11 @@ CREATE TABLE IF NOT EXISTS `driver` (
     license_no              VARCHAR(15)     NOT NULL,
     fname                   VARCHAR(20)     NOT NULL,
     lname                   VARCHAR(20)     NOT NULL,
-    mname                   VARCHAR(20)     NOT NULL,
+    mname                   VARCHAR(20)
+
     bday                    DATE            NOT NULL,
-    sex                     VARCHAR(1)      NOT NULL,
+    sex                     CHAR(1)      NOT NULL,
+
     nationality             VARCHAR(30)     NOT NULL,
     height_cm               DECIMAL(5,2)    NOT NULL,
     weight_kg               DECIMAL(5,2)    NOT NULL,
