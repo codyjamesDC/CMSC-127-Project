@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `driver` (
     eye_color               VARCHAR(15)     NOT NULL,
     blood_type              VARCHAR(3)      NOT NULL,
     contact_no              VARCHAR(15)     NOT NULL,
-    organ_donor             TINYINT(1)      NOT NULL DEFAULT 0,
+    organ_donor             BOOLEAN         NOT NULL DEFAULT 0,
     mother_fname            VARCHAR(20)     NOT NULL,
     mother_lname            VARCHAR(20)     NOT NULL,
     mother_mname            VARCHAR(20),
