@@ -313,12 +313,12 @@ SELECT
 
 -- 1. View all registered drivers filtered by: License type, License status, Age range, Sex
 SELECT *, 
-       TIMESTAMPDIFF(YEAR, bday, CURDATE()) AS age 
+TIMESTAMPDIFF(YEAR, bday, CURDATE()) AS age 
 FROM `driver`
 WHERE license_type = 'Non-Professional' 
-  AND license_status = 'Active' 
-  AND sex = 'M'
-  AND TIMESTAMPDIFF(YEAR, bday, CURDATE()) BETWEEN 20 AND 40;
+    AND license_status = 'Active' 
+    AND sex = 'M'
+    AND TIMESTAMPDIFF(YEAR, bday, CURDATE()) BETWEEN 20 AND 40;
 
 -- 2. View all vehicles owned by a given driver
 SELECT * FROM `vehicle` 
@@ -328,8 +328,8 @@ WHERE license_no = 'P02-22-654321';
 SELECT v.plate_no, v.make, v.model, vr.expiration_date 
 FROM `vehicle` v
 JOIN `vehicle_registration` vr ON v.plate_no = vr.plate_no 
-                              AND v.engine_no = vr.engine_no 
-                              AND v.chassis_no = vr.chassis_no
+                            AND v.engine_no = vr.engine_no 
+                            AND v.chassis_no = vr.chassis_no
 WHERE vr.expiration_date <= '2024-12-31';
 
 -- 4. View all drivers with expired or suspended licenses
@@ -342,7 +342,7 @@ SELECT vt.ticket_id, vt.date, vt.location, v.violation_name, v.fine_amount
 FROM `violation_ticket` vt
 JOIN `violation` v ON vt.ticket_id = v.ticket_id
 WHERE vt.license_no = 'N01-23-456789'
-  AND vt.date BETWEEN '2024-01-01' AND '2024-04-30';
+    AND vt.date BETWEEN '2024-01-01' AND '2024-04-30';
 
 -- 6. View the total number of violations per violation type for the year 2024
 SELECT v.violation_name, COUNT(*) AS total_count
@@ -355,6 +355,53 @@ GROUP BY v.violation_name;
 SELECT DISTINCT v.plate_no, v.make, v.model, vt.location, vt.date
 FROM `vehicle` v
 JOIN `violation_ticket` vt ON v.plate_no = vt.plate_no 
-                          AND v.engine_no = vt.engine_no 
-                          AND v.chassis_no = vt.chassis_no
+                        AND v.engine_no = vt.engine_no 
+                        AND v.chassis_no = vt.chassis_no
 WHERE vt.location LIKE '%Makati%';
+
+-- ============================================================
+-- DATABASE VIEWS
+-- ============================================================
+
+-- View 1: Comprehensive Driver Info (Includes calculated age)
+CREATE OR REPLACE VIEW vw_driver_info AS
+SELECT *, 
+    TIMESTAMPDIFF(YEAR, bday, CURDATE()) AS age 
+FROM `driver`;
+
+-- View 2: Vehicle Ownership 
+CREATE OR REPLACE VIEW vw_vehicle_ownership AS
+SELECT * FROM `vehicle`;
+
+-- View 3: Vehicle Registration Status
+CREATE OR REPLACE VIEW vw_vehicle_registrations AS
+SELECT v.plate_no, v.make, v.model, vr.expiration_date 
+FROM `vehicle` v
+JOIN `vehicle_registration` vr ON v.plate_no = vr.plate_no 
+                            AND v.engine_no = vr.engine_no 
+                            AND v.chassis_no = vr.chassis_no;
+
+-- View 4: Driver License Status
+CREATE OR REPLACE VIEW vw_driver_license_status AS
+SELECT license_no, fname, lname, license_status 
+FROM `driver`;
+
+-- View 5: Comprehensive Traffic Violations History
+CREATE OR REPLACE VIEW vw_violation_history AS
+SELECT vt.license_no, vt.ticket_id, vt.date, vt.location, v.violation_name, v.fine_amount 
+FROM `violation_ticket` vt
+JOIN `violation` v ON vt.ticket_id = v.ticket_id;
+
+-- View 6: Violation Types and Dates (For aggregation)
+CREATE OR REPLACE VIEW vw_violation_summary AS
+SELECT v.violation_name, vt.date 
+FROM `violation` v
+JOIN `violation_ticket` vt ON v.ticket_id = vt.ticket_id;
+
+-- View 7: Vehicle Violation Locations
+CREATE OR REPLACE VIEW vw_vehicle_violation_locations AS
+SELECT DISTINCT v.plate_no, v.make, v.model, vt.location, vt.date
+FROM `vehicle` v
+JOIN `violation_ticket` vt ON v.plate_no = vt.plate_no 
+                        AND v.engine_no = vt.engine_no 
+                        AND v.chassis_no = vt.chassis_no;
