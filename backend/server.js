@@ -2,7 +2,7 @@
 import express from 'express';
 import { connectDB } from './config/db.js';
 import dotenv from 'dotenv';
-// import routes from './routes/router.js';
+import routes from './routes/router.js';
 
 dotenv.config();
 
@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 connectDB();
-// routes(app);
+routes(app);
 
 app.listen(PORT, () => {
   console.log(`Server started at port ${PORT}`);

@@ -35,13 +35,35 @@ const runSQLFile = async (conn, filename) => {
 // ─── connectDB ────────────────────────────────────────────────────────────────
 // Runs schema.sql (CREATE TABLE IF NOT EXISTS + views) and data.sql (seeds)
 // every startup. Safe to re-run because schema uses IF NOT EXISTS.
+// ─── connectDB ────────────────────────────────────────────────────────────────
+// Checks if the database is already seeded. If not, runs schema.sql and data.sql.
 export const connectDB = async () => {
   const conn = await pool.getConnection();
   try {
-    console.log('Initializing database...');
-    await runSQLFile(conn, 'schema.sql');
-    await runSQLFile(conn, 'data.sql');
-    console.log('Database ready.\n');
+    console.log('Checking database status...');
+
+    let needsSeeding = false;
+
+    // Try to count the rows in the 'driver' table to see if data exists
+    try {
+      const [rows] = await conn.query('SELECT COUNT(*) AS count FROM driver');
+      if (rows[0].count === 0) {
+        needsSeeding = true; // Table exists but is empty
+      }
+    } catch (checkError) {
+      // If the query throws an error (e.g., table doesn't exist yet), we need to seed
+      needsSeeding = true;
+    }
+
+    if (needsSeeding) {
+      console.log('Initializing schema and seeding data...');
+      await runSQLFile(conn, 'schema.sql');
+      await runSQLFile(conn, 'data.sql');
+      console.log('Database initialized and seeded.\n');
+    } else {
+      console.log('Database is already set up and seeded. Skipping initialization.\n');
+    }
+
   } catch (err) {
     console.error('Database initialization failed:', err.message);
     process.exit(1);

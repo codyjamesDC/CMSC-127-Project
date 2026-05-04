@@ -1,0 +1,187 @@
+import pool from '../config/db.js';
+import { vehicleQueries } from '../sql/jsQueries/vehicleQueries.js';
+import { registrationQueries } from '../sql/jsQueries/registrationQueries.js';
+
+// ==========================================
+// READ: Get all vehicles
+// ==========================================
+export const getAllVehicles = async (req, res) => {
+  try {
+    const [rows] = await pool.query(vehicleQueries.selectAll);
+    res.status(200).json({ success: true, count: rows.length, data: rows });
+  } catch (error) {
+    console.error('Error fetching vehicles:', error);
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+  }
+};
+
+// ==========================================
+// READ: Get a single vehicle (with registration)
+// ==========================================
+export const getVehicleByPlate = async (req, res) => {
+  try {
+    const { plate_no } = req.params;
+    
+    // 1. Get Vehicle
+    const [vehicleRows] = await pool.query(vehicleQueries.selectByPlate, [plate_no]);
+    if (vehicleRows.length === 0) return res.status(404).json({ success: false, message: 'Vehicle not found' });
+    const vehicle = vehicleRows[0];
+
+    // 2. Get Registration details
+    const [registrationRows] = await pool.query(registrationQueries.selectByPlate, [plate_no]);
+    vehicle.registrations = registrationRows; // Attach the registrations array
+    
+    res.status(200).json({ success: true, data: vehicle });
+
+  } catch (error) {
+    console.error('Error fetching vehicle:', error);
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+  }
+};
+
+// ==========================================
+// CREATE: Add a new vehicle
+// ==========================================
+export const createVehicle = async (req, res) => {
+  const conn = await pool.getConnection(); 
+  
+  try {
+    await conn.beginTransaction();
+
+    const {
+      plate_no, engine_no, chassis_no, ownership, vehicle_type, color, make, model, year, license_no,
+      registrations // Expected to be an array of objects
+    } = req.body;
+
+    const vehicleValues = [
+      plate_no, engine_no, chassis_no, ownership, vehicle_type, color, make, model, year, license_no
+    ];
+
+    // 1. Insert Vehicle
+    await conn.query(vehicleQueries.insert, vehicleValues);
+    
+    // 2. Insert Registrations (if provided)
+    if (registrations && Array.isArray(registrations) && registrations.length > 0) {
+      for (const reg of registrations) {
+        await conn.query(registrationQueries.insert, [
+          reg.registration_no, reg.expiration_date, reg.registration_date, 
+          plate_no, engine_no, chassis_no // these 3 come from the parent vehicle
+        ]);
+      }
+    }
+
+    await conn.commit();
+    res.status(201).json({ success: true, message: 'Vehicle created successfully', data: { plate_no } });
+
+  } catch (error) {
+    await conn.rollback(); 
+    console.error('Error creating vehicle:', error);
+    
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ success: false, message: 'Plate, Engine, or Chassis number already exists' });
+    }
+    // Foreign key constraint failure (e.g., driver license doesn't exist)
+    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+      return res.status(400).json({ success: false, message: 'The provided driver license_no does not exist' });
+    }
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+  } finally {
+    conn.release(); 
+  }
+};
+
+// ==========================================
+// UPDATE: Modify an existing vehicle
+// ==========================================
+export const updateVehicle = async (req, res) => {
+  const conn = await pool.getConnection();
+
+  try {
+    await conn.beginTransaction();
+
+    const { plate_no } = req.params;
+    const {
+      ownership, vehicle_type, color, make, model, year, license_no,
+      engine_no, chassis_no, // Needed for registrations
+      registrations 
+    } = req.body;
+
+    const vehicleValues = [
+      ownership, vehicle_type, color, make, model, year, license_no, plate_no
+    ];
+
+    // 1. Update Vehicle
+    const [result] = await conn.query(vehicleQueries.update, vehicleValues);
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return res.status(404).json({ success: false, message: 'Vehicle not found' });
+    }
+
+    // 2. Wipe & Replace Registrations
+    if (registrations && Array.isArray(registrations)) {
+      await conn.query(registrationQueries.deleteAllForVehicle, [plate_no]);
+      
+      if (registrations.length > 0) {
+        // We require engine_no and chassis_no from the body to reconstruct the composite key for registrations
+        if (!engine_no || !chassis_no) {
+          throw new Error("engine_no and chassis_no must be provided to update registrations");
+        }
+
+        for (const reg of registrations) {
+          await conn.query(registrationQueries.insert, [
+            reg.registration_no, reg.expiration_date, reg.registration_date, 
+            plate_no, engine_no, chassis_no
+          ]);
+        }
+      }
+    }
+
+    await conn.commit();
+    res.status(200).json({ success: true, message: 'Vehicle updated successfully' });
+
+  } catch (error) {
+    await conn.rollback();
+    console.error('Error updating vehicle:', error);
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+  } finally {
+    conn.release();
+  }
+};
+
+// ==========================================
+// DELETE: Remove a vehicle
+// ==========================================
+export const deleteVehicle = async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const { plate_no } = req.params;
+
+    // 1. Delete associated registrations first to avoid foreign key constraints
+    await conn.query(registrationQueries.deleteAllForVehicle, [plate_no]);
+
+    // 2. Delete the vehicle
+    const [result] = await conn.query(vehicleQueries.delete, [plate_no]);
+
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return res.status(404).json({ success: false, message: 'Vehicle not found' });
+    }
+
+    await conn.commit();
+    res.status(200).json({ success: true, message: 'Vehicle deleted successfully' });
+  } catch (error) {
+    await conn.rollback();
+    console.error('Error deleting vehicle:', error);
+    // If the vehicle is tied to violation tickets
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(409).json({ 
+        success: false, 
+        message: 'Cannot delete this vehicle because it has associated violation tickets.' 
+      });
+    }
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+  } finally {
+    conn.release();
+  }
+};

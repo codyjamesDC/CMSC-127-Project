@@ -1,5 +1,5 @@
 -- ============================================================
--- PROJECT REPORTS (Using Views)
+-- PROJECT REPORTS (Using Views) for milestone only
 -- ============================================================
 
 -- 1. View all registered drivers filtered by: License type, License status, Age range, Sex
