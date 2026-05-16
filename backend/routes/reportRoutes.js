@@ -13,11 +13,11 @@ import {
 const router = express.Router();
 
 router.get('/reports/drivers', getFilteredDrivers);
-router.get('/reports/drivers/:license_no/vehicles', getVehiclesByDriver);
-router.get('/reports/vehicles/expired-registrations', getExpiredRegistrations);
-router.get('/reports/drivers/license-status', getDriversByLicenseStatus);
-router.get('/reports/drivers/:license_no/violations', getDriverViolationsByDate);
-router.get('/reports/violations/summary', getViolationSummaryByYear);
-router.get('/reports/violations/locations', getViolationsByLocation);
+router.get('/reports/vehicles/driver/:license_no', getVehiclesByDriver);
+router.get('/reports/registrations/expired', getExpiredRegistrations);
+router.get('/reports/drivers/expired-licenses', getDriversByLicenseStatus);
+router.get('/reports/violations/driver/:license_no', getDriverViolationsByDate);
+router.get('/reports/violations/by-type', getViolationSummaryByYear);
+router.get('/reports/vehicles/violations', getViolationsByLocation);
 
 export default router;

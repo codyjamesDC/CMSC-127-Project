@@ -5,13 +5,37 @@ import { reportQueries } from '../sql/jsQueries/reportQueries.js';
 // Example: GET /reports/drivers?type=Non-Professional&status=Active&sex=M&minAge=20&maxAge=40
 export const getFilteredDrivers = async (req, res) => {
   try {
-    const { type, status, sex, minAge, maxAge } = req.query;
-    
-    if (!type || !status || !sex || !minAge || !maxAge) {
-      return res.status(400).json({ success: false, message: 'Missing required query parameters (type, status, sex, minAge, maxAge)' });
+    const { license_type, license_status, sex, age_min, age_max } = req.query;
+
+    let sql = 'SELECT * FROM vw_driver_info WHERE 1 = 1';
+    const params = [];
+
+    if (license_type) {
+      sql += ' AND license_type = ?';
+      params.push(license_type);
     }
 
-    const [rows] = await pool.query(reportQueries.filteredDrivers, [type, status, sex, parseInt(minAge), parseInt(maxAge)]);
+    if (license_status) {
+      sql += ' AND license_status = ?';
+      params.push(license_status);
+    }
+
+    if (sex) {
+      sql += ' AND sex = ?';
+      params.push(sex);
+    }
+
+    if (age_min) {
+      sql += ' AND age >= ?';
+      params.push(parseInt(age_min, 10));
+    }
+
+    if (age_max) {
+      sql += ' AND age <= ?';
+      params.push(parseInt(age_max, 10));
+    }
+
+    const [rows] = await pool.query(sql, params);
     res.status(200).json({ success: true, count: rows.length, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server Error', error: error.message });
@@ -64,7 +88,8 @@ export const getDriversByLicenseStatus = async (req, res) => {
 export const getDriverViolationsByDate = async (req, res) => {
   try {
     const { license_no } = req.params;
-    const { startDate, endDate } = req.query;
+    const startDate = req.query.startDate || req.query.from;
+    const endDate = req.query.endDate || req.query.to;
 
     if (!startDate || !endDate) {
       return res.status(400).json({ success: false, message: 'Missing startDate or endDate query parameters' });
@@ -93,9 +118,9 @@ export const getViolationSummaryByYear = async (req, res) => {
 // Example: GET /reports/violations/locations?city=Makati
 export const getViolationsByLocation = async (req, res) => {
   try {
-    const city = req.query.city;
+    const city = req.query.city || req.query.location;
     if (!city) {
-      return res.status(400).json({ success: false, message: 'Missing city query parameter' });
+      return res.status(400).json({ success: false, message: 'Missing city or location query parameter' });
     }
 
     // Add SQL wildcards to search for the city anywhere in the location string

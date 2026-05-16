@@ -5,10 +5,10 @@ import {
 
 const router = express.Router();
 
-router.post('/tickets', createTicket);
-router.get('/tickets', getAllTickets);
-router.get('/tickets/:ticket_id', getTicketById);
-router.put('/tickets/:ticket_id', updateTicket);
-router.delete('/tickets/:ticket_id', deleteTicket);
+router.post('/', createTicket);
+router.get('/', getAllTickets);
+router.get('/:ticket_id', getTicketById);
+router.put('/:ticket_id', updateTicket);
+router.delete('/:ticket_id', deleteTicket);
 
 export default router;
