@@ -9,10 +9,10 @@ import {
 
 const router = express.Router();
 
-router.post('/drivers', createDriver);
-router.get('/drivers', getAllDrivers);
-router.get('/drivers/:license_no', getDriverByLicense);
-router.put('/drivers/:license_no', updateDriver);
-router.delete('/drivers/:license_no', deleteDriver);
+router.post('/', createDriver);
+router.get('/', getAllDrivers);
+router.get('/:license_no', getDriverByLicense);
+router.put('/:license_no', updateDriver);
+router.delete('/:license_no', deleteDriver);
 
 export default router;
