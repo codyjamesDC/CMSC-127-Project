@@ -33,10 +33,9 @@ const runSQLFile = async (conn, filename) => {
 };
 
 // ─── connectDB ────────────────────────────────────────────────────────────────
-// Runs schema.sql (CREATE TABLE IF NOT EXISTS + views) and data.sql (seeds)
-// every startup. Safe to re-run because schema uses IF NOT EXISTS.
-// ─── connectDB ────────────────────────────────────────────────────────────────
-// Checks if the database is already seeded. If not, runs schema.sql and data.sql.
+// Runs schema.sql (tables), data.sql (seeds), and the milestone SQL that defines
+// the report views. The views need to be recreated even when the tables are
+// already seeded, because the startup path previously skipped them.
 export const connectDB = async () => {
   const conn = await pool.getConnection();
   try {
@@ -63,6 +62,10 @@ export const connectDB = async () => {
     } else {
       console.log('Database is already set up and seeded. Skipping initialization.\n');
     }
+
+    console.log('Ensuring report views are available...');
+    await runSQLFile(conn, 'views.sql');
+    console.log('Report views ensured.\n');
 
   } catch (err) {
     console.error('Database initialization failed:', err.message);
