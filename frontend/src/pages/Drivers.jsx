@@ -3,13 +3,19 @@ import Modal from '../components/Modal';
 import { driversApi } from '../api/client';
 
 const LICENSE_TYPES = ['Student Permit', 'Non-Professional', 'Professional'];
-const LICENSE_STATUSES = ['valid', 'expired', 'suspended', 'revoked'];
-const SEXES = ['Male', 'Female'];
+const LICENSE_STATUSES = ['Active', 'Expired', 'Suspended', 'Revoked']; 
+const SEXES = ['M', 'F']; // Matching the CHAR(1) in your schema
 
 const emptyForm = {
-  full_name: '', date_of_birth: '', sex: 'Male', address: '',
-  license_number: '', license_type: 'Non-Professional',
-  license_status: 'valid', issue_date: '', expiration_date: '',
+  full_name: '', 
+  date_of_birth: '', 
+  sex: 'M', 
+  address: '',
+  license_number: '', 
+  license_type: 'Non-Professional',
+  license_status: 'Active', // Default to Active
+  issue_date: '', 
+  expiration_date: '',
 };
 
 function StatusBadge({ status }) {
@@ -60,17 +66,19 @@ export default function Drivers() {
   useEffect(() => { load(); }, [filterType, filterStatus]);
 
   const filtered = drivers.filter(d => {
-  // If search is empty or just spaces, show all driver information
-  if (!search || !search.trim()) return true; 
+  // 1. Search Logic: Returns true if the search bar is empty OR if the term matches a field
+  const matchesSearch = !search.trim() || [
+    d.full_name, 
+    d.license_number, 
+    d.address
+  ].some(field => field?.toLowerCase().includes(search.toLowerCase()));
 
-  const term = search.toLowerCase();
-  // Matching fields against your specific database schema
-  // Note: 'fname' and 'lname' from schema are concatenated as 'full_name' in the frontend
-  return (
-    d.full_name?.toLowerCase().includes(term) ||
-    d.license_number?.toLowerCase().includes(term) ||
-    d.address?.toLowerCase().includes(term)
-  );
+  // 2. Exact Dropdown Matches: Only filters if a specific type or status is selected
+  const matchesType = !filterType || d.license_type === filterType;
+  const matchesStatus = !filterStatus || d.license_status === filterStatus;
+
+  // Only drivers that meet ALL active criteria will be shown
+  return matchesSearch && matchesType && matchesStatus;
 });
 
   const openAdd = () => { setForm(emptyForm); setModal('add'); setMsg(''); };
