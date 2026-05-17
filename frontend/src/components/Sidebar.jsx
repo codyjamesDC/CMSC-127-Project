@@ -11,7 +11,7 @@ const navItems = [
   { to: '/reports', label: 'Reports', icon: '📊' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onLogout }) {
   const location = useLocation();
 
   return (
@@ -51,8 +51,33 @@ export default function Sidebar() {
       <div className="sidebar-footer">
         <div className="sidebar-footer-text">
           CMSC 127 · AY 2025–2026<br />
-          File Processing & Database Systems
+          File Processing &amp; Database Systems
         </div>
+        {/* Logout button */}
+        <button
+          onClick={onLogout}
+          style={{
+            marginTop: 12,
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            padding: '9px 0',
+            background: 'rgba(214,63,63,0.10)',
+            border: '1px solid rgba(214,63,63,0.22)',
+            borderRadius: 8,
+            color: '#c0392b',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(214,63,63,0.18)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(214,63,63,0.10)'}
+        >
+          <span style={{ fontSize: 15 }}>🚪</span> Logout
+        </button>
       </div>
     </aside>
   );
