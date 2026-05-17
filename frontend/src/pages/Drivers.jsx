@@ -31,18 +31,40 @@ export default function Drivers() {
 
   const load = async () => {
     setLoading(true);
-    try {
-      const res = await driversApi.getAll({ license_type: filterType, license_status: filterStatus });
-      setDrivers(Array.isArray(res.data) ? res.data : res.data?.data ?? []);
-    } catch { setError('Failed to load drivers. Check backend connection.'); }
-    setLoading(false);
-  };
+  try {
+    const res = await driversApi.getAll({ license_type: filterType, license_status: filterStatus });
+    const rawData = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+
+    // ADDED: Map database fields to frontend fields 
+    const mappedDrivers = rawData.map(d => ({
+      ...d,
+      full_name: `${d.fname} ${d.mname ? d.mname + ' ' : ''}${d.lname}`, // Combines fname, mname, lname 
+      license_number: d.license_no, // Maps license_no to license_number 
+      expiration_date: d.expiry_date // Maps expiry_date to expiration_date 
+    }));
+
+    setDrivers(mappedDrivers);
+  } catch { 
+    setError('Failed to load drivers. Check backend connection.'); 
+  }
+  setLoading(false);
+};
 
   useEffect(() => { load(); }, [filterType, filterStatus]);
 
-  const filtered = drivers.filter(d =>
-    [d.full_name, d.license_number, d.address].some(f => f?.toLowerCase().includes(search.toLowerCase()))
+  const filtered = drivers.filter(d => {
+  // If search is empty or just spaces, show all driver information
+  if (!search || !search.trim()) return true; 
+
+  const term = search.toLowerCase();
+  // Matching fields against your specific database schema
+  // Note: 'fname' and 'lname' from schema are concatenated as 'full_name' in the frontend
+  return (
+    d.full_name?.toLowerCase().includes(term) ||
+    d.license_number?.toLowerCase().includes(term) ||
+    d.address?.toLowerCase().includes(term)
   );
+});
 
   const openAdd = () => { setForm(emptyForm); setModal('add'); setMsg(''); };
   const openEdit = (d) => { setForm({ ...d }); setSelected(d); setModal('edit'); setMsg(''); };
