@@ -1,5 +1,5 @@
 export const vehicleQueries = {
-  selectAll: 'SELECT * FROM vehicle',
+  selectAll: `SELECT v.*, CONCAT(d.fname, ' ', d.lname) AS owner_name FROM vehicle v JOIN driver d ON v.license_no = d.license_no`,
   selectByPlate: 'SELECT * FROM vehicle WHERE plate_no = ?',
   
   insert: `

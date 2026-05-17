@@ -19,14 +19,34 @@ export default function Vehicles() {
   const [msg, setMsg] = useState('');
 
   const load = async () => {
-    setLoading(true);
-    try {
-      const [vRes, dRes] = await Promise.all([vehiclesApi.getAll({ vehicle_type: filterType }), driversApi.getAll()]);
-      setVehicles(Array.isArray(vRes.data) ? vRes.data : vRes.data?.data ?? []);
-      setDrivers(Array.isArray(dRes.data) ? dRes.data : dRes.data?.data ?? []);
-    } catch { setError('Failed to load vehicles.'); }
-    setLoading(false);
-  };
+  setLoading(true);
+  try {
+    const [vRes, dRes] = await Promise.all([
+      vehiclesApi.getAll({ vehicle_type: filterType }), 
+      driversApi.getAll()
+    ]);
+    
+    const rawVehicles = Array.isArray(vRes.data) ? vRes.data : vRes.data?.data ?? [];
+    const rawDrivers = Array.isArray(dRes.data) ? dRes.data : dRes.data?.data ?? [];
+
+    // MAPPING: Convert database names to frontend names
+    const mappedVehicles = rawVehicles.map(v => ({
+      ...v,
+      plate_number: v.plate_no,      // Map plate_no to plate_number
+      engine_number: v.engine_no,    // Map engine_no to engine_number
+      chassis_number: v.chassis_no,  // Map chassis_no to chassis_number
+      
+      // Attempt to find the owner's name from the drivers list
+      owner_name: rawDrivers.find(d => d.license_no === v.license_no)?.full_name ?? v.license_no
+    }));
+
+    setVehicles(mappedVehicles);
+    setDrivers(rawDrivers);
+  } catch { 
+    setError('Failed to load vehicles.'); 
+  }
+  setLoading(false);
+};
 
   useEffect(() => { load(); }, [filterType]);
 
