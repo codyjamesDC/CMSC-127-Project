@@ -13,7 +13,7 @@ const emptyForm = {
   address: '',
   license_number: '', 
   license_type: 'Non-Professional',
-  license_status: 'Active', // Default to Active
+  license_status: 'valid', // Default to Active
   issue_date: '', 
   expiration_date: '',
 };

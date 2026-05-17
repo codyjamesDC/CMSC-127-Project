@@ -66,64 +66,46 @@ export const getDriverByLicense = async (req, res) => {
 // ==========================================
 // CREATE: Add a new driver
 // ==========================================
+
 export const createDriver = async (req, res) => {
-  const conn = await pool.getConnection(); 
-  
+  const conn = await pool.getConnection(); // Use a connection for transactions
   try {
     await conn.beginTransaction();
-
+    
+    // Extract address along with other fields
     const {
-      license_no, fname, lname, mname, bday, sex, nationality, height_cm, weight_kg,
-      eye_color, blood_type, contact_no, organ_donor, mother_fname, mother_lname, mother_mname,
-      father_fname, father_lname, father_mname, emrg_contact_person, emrg_contact_no,
-      license_type, license_status, issued_date, expiry_date, agency_code,
-      conditions, license_codes, addresses // <-- Added missing destructuring here
+      license_number, full_name, date_of_birth, sex, address,
+      license_type, license_status, issue_date, expiration_date
     } = req.body;
 
-    const values = [
-      license_no, fname, lname, mname, bday, sex, nationality, height_cm, weight_kg,
-      eye_color, blood_type, contact_no, organ_donor || 0, mother_fname, mother_lname, mother_mname,
-      father_fname, father_lname, father_mname, emrg_contact_person, emrg_contact_no,
-      license_type, license_status || 'Active', issued_date, expiry_date, agency_code
+    const nameParts = full_name.split(' ');
+    const fname = nameParts[0] || 'Unknown';
+    const lname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Unknown';
+
+    // 1. Insert into 'driver' table
+    // Note: providing defaults for required fields not in your current form
+    const driverValues = [
+      license_number, fname, lname, '', date_of_birth, sex, 
+      'Filipino', 0, 0, 'Brown', 'O+', '09000000000', 0, 
+      'Mother', 'Name', '', 'Father', 'Name', '', 
+      'Emergency', '09000000000', license_type, license_status, 
+      issue_date, expiration_date, 'LTO-NCR'
     ];
+    await conn.query(driverQueries.insert, driverValues);
 
-    // 1. Insert Driver
-    await conn.query(driverQueries.insert, values);
-    
-    // 2. Insert Conditions
-    if (conditions && Array.isArray(conditions) && conditions.length > 0) {
-      for (const condition of conditions) {
-        await conn.query(conditionQueries.insert, [license_no, condition]);
-      }
-    }
-
-    // 3. Insert License Codes 
-    if (license_codes && Array.isArray(license_codes) && license_codes.length > 0) {
-      for (const code of license_codes) {
-        await conn.query(licenseCodeQueries.insert, [license_no, code]);
-      }
-    }
-
-    // 4. Insert Addresses (NEW)
-    if (addresses && Array.isArray(addresses) && addresses.length > 0) {
-      for (const address of addresses) {
-        await conn.query(addressQueries.insert, [license_no, address]);
-      }
+    // 2. Insert into 'driver_address' table
+    if (address) {
+      await conn.query('INSERT INTO driver_address (license_no, address) VALUES (?, ?)', [license_number, address]);
     }
 
     await conn.commit();
-    res.status(201).json({ success: true, message: 'Driver created successfully', data: { license_no } });
-
+    res.status(201).json({ success: true, message: 'Driver and Address created' });
   } catch (error) {
-    await conn.rollback(); 
-    console.error('Error creating driver:', error);
-    
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ success: false, message: 'License number already exists' });
-    }
-    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+    await conn.rollback();
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
   } finally {
-    conn.release(); 
+    conn.release();
   }
 };
 
