@@ -39,8 +39,15 @@ export default function Drivers() {
     const mappedDrivers = rawData.map(d => ({
       ...d,
       full_name: `${d.fname} ${d.mname ? d.mname + ' ' : ''}${d.lname}`, // Combines fname, mname, lname 
-      license_number: d.license_no, // Maps license_no to license_number 
-      expiration_date: d.expiry_date // Maps expiry_date to expiration_date 
+      // MAPPING DATABASE FIELDS TO FRONTEND NAMES
+      license_number: d.license_no, 
+      date_of_birth: d.bday,        // Maps 'bday' to 'date_of_birth'
+      issue_date: d.issued_date,    // Maps 'issued_date' to 'issue_date'
+      expiration_date: d.expiry_date, 
+      
+      // Since address is in a supporting table, ensure your backend join 
+      // returns it, or map it here if it's currently undefined
+      address: d.address || '—' 
     }));
 
     setDrivers(mappedDrivers);

@@ -1,6 +1,6 @@
 export const driverQueries = {
   // READ
-  selectAll: 'SELECT * FROM driver',
+  selectAll: `SELECT d.*, da.address FROM driver d LEFT JOIN driver_address da ON d.license_no = da.license_no`,
   selectByLicense: 'SELECT * FROM driver WHERE license_no = ?',
   
   // CREATE

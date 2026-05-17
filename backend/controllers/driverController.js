@@ -10,10 +10,24 @@ import { addressQueries } from '../sql/jsQueries/addressQueries.js';
 export const getAllDrivers = async (req, res) => {
   try {
     const [rows] = await pool.query(driverQueries.selectAll);
-    res.status(200).json({ success: true, count: rows.length, data: rows });
+    
+    // Grouping rows by license_no to handle potential multiple addresses
+    const drivers = rows.reduce((acc, current) => {
+      const x = acc.find(item => item.license_no === current.license_no);
+      if (!x) {
+        // If driver doesn't exist in accumulator, add them
+        acc.push({ ...current });
+      } else if (current.address) {
+        // If driver exists, append additional address if available
+        x.address = `${x.address} / ${current.address}`;
+      }
+      return acc;
+    }, []);
+
+    res.status(200).json({ success: true, count: drivers.length, data: drivers });
   } catch (error) {
     console.error('Error fetching drivers:', error);
-    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+    res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
 
