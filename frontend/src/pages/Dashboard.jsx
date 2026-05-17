@@ -14,11 +14,12 @@ export default function Dashboard() {
       violationsApi.getAll(),
       registrationsApi.getAll(),
     ]).then(([d, v, vio, r]) => {
+      // ADDED: Logic to count records or use 'total' if provided by backend
       setStats({
-        drivers: d.status === 'fulfilled' ? (d.value.data?.length ?? d.value.data?.total ?? '?') : 'ERR',
-        vehicles: v.status === 'fulfilled' ? (v.value.data?.length ?? v.value.data?.total ?? '?') : 'ERR',
-        violations: vio.status === 'fulfilled' ? (vio.value.data?.length ?? vio.value.data?.total ?? '?') : 'ERR',
-        registrations: r.status === 'fulfilled' ? (r.value.data?.length ?? r.value.data?.total ?? '?') : 'ERR',
+        drivers: d.status === 'fulfilled' ? (d.value.data?.length ?? 0) : 'ERR',
+        vehicles: v.status === 'fulfilled' ? (v.value.data?.length ?? 0) : 'ERR',
+        violations: vio.status === 'fulfilled' ? (vio.value.data?.length ?? 0) : 'ERR',
+        registrations: r.status === 'fulfilled' ? (r.value.data?.length ?? 0) : 'ERR',
       });
       setLoading(false);
     });

@@ -50,7 +50,7 @@ export default function Vehicles() {
   };
 
   const handleDelete = async (v) => {
-    if (!window.confirm(`Delete vehicle "${v.plate_number}"?`)) return;
+    if (!window.confirm(`Delete vehicle "${v.plate_no}"?`)) return;
     try { await vehiclesApi.delete(v.plate_no); load(); }
     catch (e) { alert('Delete failed: ' + (e.response?.data?.message ?? e.message)); }
   };
