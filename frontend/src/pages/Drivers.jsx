@@ -13,7 +13,7 @@ const emptyForm = {
   address: '',
   license_number: '', 
   license_type: 'Non-Professional',
-  license_status: 'valid', // Default to Active
+  license_status: 'Active', // Default to Active
   issue_date: '', 
   expiration_date: '',
 };
@@ -86,18 +86,30 @@ export default function Drivers() {
   const openView = (d) => { setSelected(d); setModal('view'); };
 
   const handleSave = async () => {
-    setSaving(true);
-    try {
-      if (modal === 'add') await driversApi.create(form);
-      else await driversApi.update(selected.license_no, form);
-      setMsg('Saved successfully.');
-      await load();
-      setTimeout(() => { setModal(null); setMsg(''); }, 800);
-    } catch (e) {
-      setMsg('Error: ' + (e.response?.data?.message ?? e.message));
+  setSaving(true);
+  try {
+    // Create a copy of the form and clean the date fields
+    const payload = {
+      ...form,
+      date_of_birth: form.date_of_birth?.split('T')[0],
+      issue_date: form.issue_date?.split('T')[0],
+      expiration_date: form.expiration_date?.split('T')[0],
+    };
+
+    if (modal === 'add') {
+      await driversApi.create(payload); // Send cleaned payload
+    } else {
+      await driversApi.update(selected.license_no, payload); // Send cleaned payload
     }
-    setSaving(false);
-  };
+    
+    setMsg('Saved successfully.');
+    await load();
+    setTimeout(() => { setModal(null); setMsg(''); }, 800);
+  } catch (e) {
+    setMsg('Error: ' + (e.response?.data?.message ?? e.message));
+  }
+  setSaving(false);
+};
 
   const handleDelete = async (d) => {
     if (!window.confirm(`Delete driver "${d.full_name}"? This cannot be undone.`)) return;

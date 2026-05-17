@@ -112,73 +112,55 @@ export const createDriver = async (req, res) => {
 // ==========================================
 // UPDATE: Modify an existing driver
 // ==========================================
+
 export const updateDriver = async (req, res) => {
   const conn = await pool.getConnection();
-
   try {
     await conn.beginTransaction();
-
     const { license_no } = req.params;
     const {
-      fname, lname, mname, bday, sex, nationality, height_cm, weight_kg,
-      eye_color, blood_type, contact_no, organ_donor, mother_fname, mother_lname, mother_mname,
-      father_fname, father_lname, father_mname, emrg_contact_person, emrg_contact_no,
-      license_type, license_status, issued_date, expiry_date, agency_code,
-      conditions, license_codes, addresses
+      full_name, date_of_birth, sex, address,
+      license_type, license_status, issue_date, expiration_date
     } = req.body;
 
+    // Helper to strip ISO time (T00:00:00.000Z) so MariaDB accepts the date
+    const formatDate = (dateStr) => dateStr ? dateStr.split('T')[0] : null;
+
+    const nameParts = (full_name || '').split(' ');
+    const fname = nameParts[0] || 'Unknown';
+    const lname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Unknown';
+
     const values = [
-      fname, lname, mname, bday, sex, nationality, height_cm, weight_kg,
-      eye_color, blood_type, contact_no, organ_donor, mother_fname, mother_lname, mother_mname,
-      father_fname, father_lname, father_mname, emrg_contact_person, emrg_contact_no,
-      license_type, license_status, issued_date, expiry_date, agency_code, 
-      license_no
+      fname, lname, '', 
+      formatDate(date_of_birth), sex, // Cleaned date
+      'Filipino', 0, 0, 'Brown', 'O+', '09000000000', 0, 
+      'Mother', 'Name', '', 'Father', 'Name', '', 
+      'Emergency', '09000000000', 
+      license_type, license_status, 
+      formatDate(issue_date),        // Cleaned date
+      formatDate(expiration_date),   // Cleaned date
+      'LTO-NCR',
+      license_no 
     ];
 
-    // 1. Update Driver
     const [result] = await conn.query(driverQueries.update, values);
     if (result.affectedRows === 0) {
       await conn.rollback();
       return res.status(404).json({ success: false, message: 'Driver not found' });
     }
 
-    // 2. Wipe & Replace Conditions
-    if (conditions && Array.isArray(conditions)) {
-      await conn.query(conditionQueries.deleteAllForDriver, [license_no]);
-      if (conditions.length > 0) {
-        for (const condition of conditions) {
-          await conn.query(conditionQueries.insert, [license_no, condition]);
-        }
-      }
-    }
-
-    // 3. Wipe & Replace License Codes
-    if (license_codes && Array.isArray(license_codes)) {
-      await conn.query(licenseCodeQueries.deleteAllForDriver, [license_no]);
-      if (license_codes.length > 0) {
-        for (const code of license_codes) {
-          await conn.query(licenseCodeQueries.insert, [license_no, code]);
-        }
-      }
-    }
-
-    // 4. Wipe & Replace Addresses (NEW)
-    if (addresses && Array.isArray(addresses)) {
-      await conn.query(addressQueries.deleteAllForDriver, [license_no]);
-      if (addresses.length > 0) {
-        for (const address of addresses) {
-          await conn.query(addressQueries.insert, [license_no, address]);
-        }
-      }
+    // 2. Update Address (Wipe and replace for simplicity)
+    if (address) {
+      await conn.query('DELETE FROM driver_address WHERE license_no = ?', [license_no]);
+      await conn.query('INSERT INTO driver_address (license_no, address) VALUES (?, ?)', [license_no, address]);
     }
 
     await conn.commit();
     res.status(200).json({ success: true, message: 'Driver updated successfully' });
-
   } catch (error) {
     await conn.rollback();
-    console.error('Error updating driver:', error);
-    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+    console.error('Update error:', error);
+    res.status(500).json({ success: false, message: error.message });
   } finally {
     conn.release();
   }
