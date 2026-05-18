@@ -1,8 +1,14 @@
 export const reportQueries = {
   // 1. Filtered drivers
+  // Uses TIMESTAMPDIFF to calculate age dynamically from date_of_birth.
+  // Checks if the parameter is an empty string first; if it is, it skips the filter.
   filteredDrivers: `
-    SELECT * FROM vw_driver_info 
-    WHERE license_type = ? AND license_status = ? AND sex = ? AND age BETWEEN ? AND ?
+    SELECT * FROM driver 
+    WHERE (? = '' OR license_type = ?)
+      AND (? = '' OR license_status = ?)
+      AND (? = '' OR sex = ?)
+      AND (? = '' OR TIMESTAMPDIFF(YEAR, bday, CURDATE()) >= ?)
+      AND (? = '' OR TIMESTAMPDIFF(YEAR, bday, CURDATE()) <= ?)
   `,
   
   // 2. Vehicles owned by driver
@@ -11,8 +17,7 @@ export const reportQueries = {
   // 3. Expired registrations as of a specific date
   expiredRegistrations: `SELECT * FROM vw_vehicle_registrations WHERE expiration_date <= ?`,
   
-  // 4. Drivers with specific license statuses (using FIND_IN_SET for flexibility, or just an IN clause built dynamically)
-  // For simplicity, we'll check against a single status or build the IN clause in the controller.
+  // 4. Drivers with specific license statuses 
   driversByStatus: `SELECT * FROM vw_driver_license_status WHERE license_status IN (?)`,
   
   // 5. Driver violations within a date range

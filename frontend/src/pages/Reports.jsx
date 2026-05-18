@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { reportsApi } from '../api/client';
 
 const LICENSE_TYPES = ['', 'Student Permit', 'Non-Professional', 'Professional'];
-const LICENSE_STATUSES = ['', 'valid', 'expired', 'suspended', 'revoked'];
-const SEXES = ['', 'Male', 'Female'];
+const LICENSE_STATUSES = ['', 'Active', 'Expired', 'Suspended'];
+const SEXES = ['', 'M', 'F'];
 
 function ReportTable({ data, loading, error }) {
   if (loading) return <div className="loading"><div className="loading-dot" /><div className="loading-dot" /><div className="loading-dot" /></div>;
@@ -104,7 +104,9 @@ export default function Reports() {
             {LICENSE_STATUSES.map(s => <option key={s} value={s}>{s || 'All Statuses'}</option>)}
           </select>
           <select className="filter-select" value={r1Params.sex} onChange={e => setR1Params(p => ({ ...p, sex: e.target.value }))}>
-            {SEXES.map(s => <option key={s} value={s}>{s || 'All Sexes'}</option>)}
+            <option value="">All Sexes</option>
+            <option value="M">Male</option>
+            <option value="F">Female</option>
           </select>
           <input className="filter-select" type="number" placeholder="Min Age" value={r1Params.age_min} onChange={e => setR1Params(p => ({ ...p, age_min: e.target.value }))} style={{ width: 90 }} />
           <input className="filter-select" type="number" placeholder="Max Age" value={r1Params.age_max} onChange={e => setR1Params(p => ({ ...p, age_max: e.target.value }))} style={{ width: 90 }} />

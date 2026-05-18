@@ -48,7 +48,7 @@ export const violationsApi = {
 
 // ── REPORTS ──────────────────────────────────────────────
 export const reportsApi = {
-  driversByFilter: (params) => api.get('/reports/drivers', { params }),
+  driversByFilter: (data) => api.get('/reports/drivers', { params: data }),
   vehiclesByDriver: (driverId) => api.get(`/reports/vehicles/driver/${driverId}`),
   expiredRegistrations: (date) => api.get('/reports/registrations/expired', { params: { date } }),
   expiredLicenses: () => api.get('/reports/drivers/expired-licenses'),

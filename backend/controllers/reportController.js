@@ -3,41 +3,50 @@ import { reportQueries } from '../sql/jsQueries/reportQueries.js';
 
 // 1. View all registered drivers filtered by: License type, License status, Age range, Sex
 // Example: GET /reports/drivers?type=Non-Professional&status=Active&sex=M&minAge=20&maxAge=40
+// Inside your reportsController.js
+
 export const getFilteredDrivers = async (req, res) => {
   try {
     const { license_type, license_status, sex, age_min, age_max } = req.query;
 
-    let sql = 'SELECT * FROM vw_driver_info WHERE 1 = 1';
-    const params = [];
+    // 1. Start with a base query that selects everything
+    let sqlQuery = 'SELECT * FROM driver WHERE 1=1';
+    const queryParams = [];
 
+    // 2. Dynamically add filters only if they exist and are not empty
     if (license_type) {
-      sql += ' AND license_type = ?';
-      params.push(license_type);
+      sqlQuery += ' AND license_type = ?';
+      queryParams.push(license_type);
     }
 
     if (license_status) {
-      sql += ' AND license_status = ?';
-      params.push(license_status);
+      sqlQuery += ' AND license_status = ?';
+      queryParams.push(license_status);
     }
 
     if (sex) {
-      sql += ' AND sex = ?';
-      params.push(sex);
+      sqlQuery += ' AND sex = ?';
+      queryParams.push(sex);
     }
 
-    if (age_min) {
-      sql += ' AND age >= ?';
-      params.push(parseInt(age_min, 10));
+    // Convert age to numbers and ignore if they are 0 or empty
+    if (age_min && age_min !== '0') {
+      sqlQuery += ' AND TIMESTAMPDIFF(YEAR, bday, CURDATE()) >= ?';
+      queryParams.push(Number(age_min));
     }
 
-    if (age_max) {
-      sql += ' AND age <= ?';
-      params.push(parseInt(age_max, 10));
+    if (age_max && age_max !== '0') {
+      sqlQuery += ' AND TIMESTAMPDIFF(YEAR, bday, CURDATE()) <= ?';
+      queryParams.push(Number(age_max));
     }
 
-    const [rows] = await pool.query(sql, params);
+    // 3. Execute the exact query needed
+    // (Notice we don't use reportQueries.filteredDrivers anymore)
+    const [rows] = await pool.query(sqlQuery, queryParams);
+    
     res.status(200).json({ success: true, count: rows.length, data: rows });
   } catch (error) {
+    console.error('Error fetching filtered drivers:', error);
     res.status(500).json({ success: false, message: 'Server Error', error: error.message });
   }
 };
