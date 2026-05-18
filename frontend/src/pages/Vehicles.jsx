@@ -173,12 +173,12 @@ export default function Vehicles() {
             <option value="">All Types</option>
             {VEHICLE_TYPES.map(t => <option key={t}>{t}</option>)}
           </select>
-          <button className="btn btn-secondary btn-sm" onClick={load}>↺ Refresh</button>
           {/* New Ownership Filter Dropdown */}
           <select className="filter-select" value={filterOwnership} onChange={e => setFilterOwnership(e.target.value)}>
             <option value="">All Ownerships</option>
             {OWNERSHIP_TYPES.map(o => <option key={o}>{o}</option>)}
           </select>
+          <button className="btn btn-secondary btn-sm" onClick={load}>↺ Refresh</button>
         </div>
 
         {loading ? (
