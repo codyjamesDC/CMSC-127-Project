@@ -3,7 +3,7 @@ import Modal from '../components/Modal';
 import { driversApi } from '../api/client';
 
 const LICENSE_TYPES = ['Student Permit', 'Non-Professional', 'Professional'];
-const LICENSE_STATUSES = ['Active', 'Expired', 'Suspended', 'Revoked']; 
+const LICENSE_STATUSES = ['Active', 'Expired', 'Suspended']; 
 const SEXES = ['M', 'F']; // Matching the CHAR(1) in your schema
 
 const emptyForm = {

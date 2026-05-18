@@ -3,7 +3,7 @@ import Modal from '../components/Modal';
 import { vehiclesApi, driversApi } from '../api/client';
 
 const VEHICLE_TYPES = ['Motorcycle', 'Sedan', 'Hatchback', 'SUV', 'Van', 'Truck', 'Bus'];
-const OWNERSHIP_TYPES = ['Private Car', 'Public Utility Vehicle']; // New dropdown options
+const OWNERSHIP_TYPES = ['Private', 'For Hire']; // New dropdown options
 const emptyForm = { 
   plate_number: '', 
   engine_number: '', 
