@@ -41,22 +41,83 @@ export default function Violations() {
 
   useEffect(() => { load(); }, [filterStatus]);
 
-  const filtered = violations.filter(v =>
-    [v.violation_type, v.location, v.driver_name, v.plate_number, v.apprehending_officer].some(f => f?.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filtered = violations.filter(v => {
+    const violationName = v.violations?.[0]?.violation_name || '';
+    const driverRef = v.driver_name || v.license_no || '';
+    
+    return [violationName, v.location, driverRef, v.plate_no, v.apprehending_officer]
+      .some(f => f?.toLowerCase().includes(search.toLowerCase()));
+  });
 
   const openAdd = () => { setForm(emptyForm); setModal('add'); setMsg(''); };
-  const openEdit = (v) => { setForm({ ...v }); setSelected(v); setModal('edit'); setMsg(''); };
+  
+  const openEdit = (v) => { 
+    // Map the backend structure back to the frontend form state
+    setForm({ 
+      violation_type: v.violations?.[0]?.violation_name ?? 'Overspeeding',
+      date_of_violation: v.date ?? '',
+      location: v.location ?? '',
+      fine_amount: v.violations?.[0]?.fine_amount ?? '',
+      apprehending_officer: v.apprehending_officer ?? '',
+      violation_status: v.violation_status ?? 'unpaid',
+      driver_id: v.license_no ?? '',
+      vehicle_id: v.plate_no ?? ''
+    }); 
+    setSelected(v); 
+    setModal('edit'); 
+    setMsg(''); 
+  };
+
   const openView = (v) => { setSelected(v); setModal('view'); };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      if (modal === 'add') await violationsApi.create(form);
-      else await violationsApi.update(selected.ticket_id ?? selected.id, form);
+      // 1. Find the selected vehicle from the dropdown to get its engine and chassis numbers
+      const selectedVehicle = vehicles.find(v => v.plate_no === form.vehicle_id);
+
+      if (!selectedVehicle) {
+        setMsg('Error: Please select a valid vehicle.');
+        setSaving(false);
+        return;
+      }
+
+      if (!form.driver_id) {
+        setMsg('Error: Please select a driver.');
+        setSaving(false);
+        return;
+      }
+
+      // 2. Map frontend form state to the exact schema the backend expects
+      const payload = {
+        location: form.location,
+        date: form.date_of_violation,
+        violation_status: form.violation_status,
+        apprehending_officer: form.apprehending_officer,
+        license_no: form.driver_id,                 // Maps driver dropdown to license_no
+        plate_no: selectedVehicle.plate_no,         // From the vehicle array
+        engine_no: selectedVehicle.engine_no,       // From the vehicle array (REQUIRED for DB constraints!)
+        chassis_no: selectedVehicle.chassis_no,     // From the vehicle array (REQUIRED for DB constraints!)
+        violations: [
+          {
+            violation_name: form.violation_type, 
+            fine_amount: Number(form.fine_amount)
+          }
+        ]
+      };
+
+      // 3. Send to API
+      if (modal === 'add') {
+        await violationsApi.create(payload);
+      } else {
+        await violationsApi.update(selected.ticket_id ?? selected.id, payload);
+      }
+      
       await load();
       setTimeout(() => { setModal(null); setMsg(''); }, 600);
-    } catch (e) { setMsg('Error: ' + (e.response?.data?.message ?? e.message)); }
+    } catch (e) { 
+      setMsg('Error: ' + (e.response?.data?.message ?? e.message)); 
+    }
     setSaving(false);
   };
 
@@ -151,13 +212,30 @@ export default function Violations() {
                 {filtered.map((v, i) => (
                   <tr key={v.ticket_id ?? i}>
                     <td style={{ color: 'var(--lto-text-muted)', fontWeight: 600 }}>{i + 1}</td>
-                    <td style={{ fontWeight: 600 }}>{v.violation_type}</td>
-                    <td style={{ fontSize: 12 }}>{v.driver_name ?? v.full_name ?? '—'}</td>
-                    <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--lto-blue)', fontSize: 12 }}>{v.plate_number ?? '—'}</td>
-                    <td style={{ fontSize: 12 }}>{v.date_of_violation ? new Date(v.date_of_violation).toLocaleDateString('en-PH') : '—'}</td>
+                    
+                    {/* Read violation_name from nested array */}
+                    <td style={{ fontWeight: 600 }}>{v.violations?.[0]?.violation_name ?? '—'}</td>
+                    
+                    {/* Use driver_name if SQL joined it, otherwise fallback to license_no */}
+                    <td style={{ fontSize: 12 }}>{v.driver_name ?? v.license_no ?? '—'}</td>
+                    
+                    <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--lto-blue)', fontSize: 12 }}>
+                      {v.plate_no ?? '—'}
+                    </td>
+                    
+                    <td style={{ fontSize: 12 }}>
+                      {v.date ? new Date(v.date).toLocaleDateString('en-PH') : '—'}
+                    </td>
+                    
                     <td style={{ fontSize: 12 }}>{v.location ?? '—'}</td>
-                    <td style={{ fontWeight: 700 }}>₱{Number(v.fine_amount ?? 0).toLocaleString()}</td>
+                    
+                    {/* Read fine_amount from nested array */}
+                    <td style={{ fontWeight: 700 }}>
+                      ₱{Number(v.violations?.[0]?.fine_amount ?? 0).toLocaleString()}
+                    </td>
+                    
                     <td><StatusBadge status={v.violation_status} /></td>
+                    
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn btn-secondary btn-sm" onClick={() => openView(v)}>View</button>
@@ -173,6 +251,7 @@ export default function Violations() {
         )}
       </div>
 
+      {/* ADD / EDIT MODAL */}
       {(modal === 'add' || modal === 'edit') && (
         <Modal title={modal === 'add' ? '⚠️ File Traffic Violation' : '✏️ Edit Violation'} onClose={() => setModal(null)}
           footer={<>
@@ -180,23 +259,24 @@ export default function Violations() {
             <button className="btn btn-secondary" onClick={() => setModal(null)}>Cancel</button>
             <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
           </>}>
-          <FormFields />
+          {FormFields()}
         </Modal>
       )}
 
+      {/* VIEW DETAILS MODAL */}
       {modal === 'view' && selected && (
         <Modal title="⚠️ Violation Details" onClose={() => setModal(null)}
           footer={<><button className="btn btn-primary" onClick={() => openEdit(selected)}>Edit</button><button className="btn btn-secondary" onClick={() => setModal(null)}>Close</button></>}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {[
-              ['Violation Type', selected.violation_type],
+              ['Violation Type', selected.violations?.[0]?.violation_name],
               ['Status', selected.violation_status],
-              ['Date', selected.date_of_violation ? new Date(selected.date_of_violation).toLocaleDateString('en-PH') : '—'],
-              ['Fine Amount', `₱${Number(selected.fine_amount ?? 0).toLocaleString()}`],
+              ['Date', selected.date ? new Date(selected.date).toLocaleDateString('en-PH') : '—'],
+              ['Fine Amount', `₱${Number(selected.violations?.[0]?.fine_amount ?? 0).toLocaleString()}`],
               ['Location', selected.location],
               ['Officer', selected.apprehending_officer ?? '—'],
-              ['Driver', selected.driver_name ?? selected.full_name ?? '—'],
-              ['Vehicle', selected.plate_number ?? '—'],
+              ['Driver', selected.driver_name ?? selected.license_no ?? '—'],
+              ['Vehicle', selected.plate_no ?? '—'],
             ].map(([label, val]) => (
               <div key={label}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--lto-blue)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: 'Barlow Condensed, sans-serif' }}>{label}</div>

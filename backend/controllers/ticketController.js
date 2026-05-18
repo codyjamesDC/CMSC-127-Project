@@ -7,8 +7,16 @@ import { violationQueries } from '../sql/jsQueries/violationQueries.js';
 // ==========================================
 export const getAllTickets = async (req, res) => {
   try {
-    const [rows] = await pool.query(ticketQueries.selectAll);
-    res.status(200).json({ success: true, count: rows.length, data: rows });
+    // 1. Get all basic tickets
+    const [tickets] = await pool.query(ticketQueries.selectAll);
+    
+    // 2. Loop through tickets and fetch their violations
+    for (let ticket of tickets) {
+      const [violations] = await pool.query(violationQueries.selectByTicketId, [ticket.ticket_id]);
+      ticket.violations = violations; 
+    }
+
+    res.status(200).json({ success: true, count: tickets.length, data: tickets });
   } catch (error) {
     console.error('Error fetching tickets:', error);
     res.status(500).json({ success: false, message: 'Server Error', error: error.message });
