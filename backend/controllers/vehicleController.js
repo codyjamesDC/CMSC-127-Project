@@ -7,11 +7,30 @@ import { registrationQueries } from '../sql/jsQueries/registrationQueries.js';
 // ==========================================
 export const getAllVehicles = async (req, res) => {
   try {
-    const [rows] = await pool.query(vehicleQueries.selectAll);
+    const { vehicle_type, ownership } = req.query; // Extract both filters
+    let sql = vehicleQueries.selectAll;
+    const params = [];
+
+    // Check if we need to add WHERE or AND
+    if (vehicle_type || ownership) {
+      sql += " WHERE 1=1"; // Base for appending filters
+      
+      if (vehicle_type) {
+        sql += " AND v.vehicle_type = ?";
+        params.push(vehicle_type);
+      }
+      
+      if (ownership) {
+        sql += " AND v.ownership = ?";
+        params.push(ownership);
+      }
+    }
+
+    const [rows] = await pool.query(sql, params);
     res.status(200).json({ success: true, count: rows.length, data: rows });
   } catch (error) {
     console.error('Error fetching vehicles:', error);
-    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+    res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
 
@@ -100,10 +119,10 @@ export const updateVehicle = async (req, res) => {
     await conn.beginTransaction();
 
     const { plate_no } = req.params;
-    const {
+    // ADDED: registrations, engine_no, and chassis_no to the destructuring
+    const { 
       ownership, vehicle_type, color, make, model, year, license_no,
-      engine_no, chassis_no, // Needed for registrations
-      registrations 
+      registrations, engine_no, chassis_no 
     } = req.body;
 
     const vehicleValues = [
@@ -122,7 +141,7 @@ export const updateVehicle = async (req, res) => {
       await conn.query(registrationQueries.deleteAllForVehicle, [plate_no]);
       
       if (registrations.length > 0) {
-        // We require engine_no and chassis_no from the body to reconstruct the composite key for registrations
+        // Validation check for composite keys
         if (!engine_no || !chassis_no) {
           throw new Error("engine_no and chassis_no must be provided to update registrations");
         }
@@ -142,6 +161,7 @@ export const updateVehicle = async (req, res) => {
   } catch (error) {
     await conn.rollback();
     console.error('Error updating vehicle:', error);
+    // Returning the specific error message helps debug frontend issues
     res.status(500).json({ success: false, message: 'Server Error', error: error.message });
   } finally {
     conn.release();

@@ -2,8 +2,73 @@ import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { vehiclesApi, driversApi } from '../api/client';
 
-const VEHICLE_TYPES = ['Motorcycle', 'Private Car', 'Public Utility Vehicle', 'Truck', 'Bus', 'SUV', 'Van'];
-const emptyForm = { plate_number: '', engine_number: '', chassis_number: '', vehicle_type: 'Private Car', make: '', model: '', year: '', color: '', driver_id: '' };
+const VEHICLE_TYPES = ['Motorcycle', 'Sedan', 'Hatchback', 'SUV', 'Van', 'Truck', 'Bus'];
+const OWNERSHIP_TYPES = ['Private Car', 'Public Utility Vehicle']; // New dropdown options
+const emptyForm = { 
+  plate_number: '', 
+  engine_number: '', 
+  chassis_number: '', 
+  vehicle_type: 'Sedan', 
+  ownership: 'Private Car', // Default value
+  make: '', 
+  model: '', 
+  year: '', 
+  color: '', 
+  license_no: '' 
+};
+
+// 1. Define this OUTSIDE the Vehicles function at the top of the file
+const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPES }) => (
+  <div className="form-grid">
+    <div className="form-group">
+      <label className="form-label">Plate Number *</label>
+      <input className="form-control" name="plate_number" value={form.plate_number} onChange={handleChange} placeholder="AAA1234" />
+    </div>
+    <div className="form-group">
+      <label className="form-label">Vehicle Type</label>
+      <select className="form-control" name="vehicle_type" value={form.vehicle_type} onChange={handleChange}>
+        {VEHICLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+      </select>
+    </div>
+    <div className="form-group">
+      <label className="form-label">Engine Number</label>
+      <input className="form-control" name="engine_number" value={form.engine_number} onChange={handleChange} placeholder="ENGINE123" />
+    </div>
+    <div className="form-group">
+      <label className="form-label">Chassis Number</label>
+      <input className="form-control" name="chassis_number" value={form.chassis_number} onChange={handleChange} placeholder="CHASSIS123" />
+    </div>
+    <div className="form-group">
+      <label className="form-label">Ownership Type</label>
+      <select className="form-control" name="ownership" value={form.ownership} onChange={handleChange}>
+        {OWNERSHIP_TYPES.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
+    <div className="form-group">
+      <label className="form-label">Make (Brand)</label>
+      <input className="form-control" name="make" value={form.make} onChange={handleChange} placeholder="Toyota" />
+    </div>
+    <div className="form-group">
+      <label className="form-label">Model</label>
+      <input className="form-control" name="model" value={form.model} onChange={handleChange} placeholder="Vios" />
+    </div>
+    <div className="form-group">
+      <label className="form-label">Year</label>
+      <input className="form-control" type="number" name="year" value={form.year} onChange={handleChange} placeholder="2024" min="1900" max="2030" />
+    </div>
+    <div className="form-group">
+      <label className="form-label">Color</label>
+      <input className="form-control" name="color" value={form.color} onChange={handleChange} placeholder="White" />
+    </div>
+    <div className="form-group full">
+      <label className="form-label">Registered Owner (Driver)</label>
+      <select className="form-control" name="license_no" value={form.license_no ?? ''} onChange={handleChange}>
+        <option value="">— Select Owner —</option>
+        {drivers.map(d => <option key={d.license_no} value={d.license_no}>{d.full_name} · {d.license_no}</option>)}
+      </select>
+    </div>
+  </div>
+);
 
 export default function Vehicles() {
   const [vehicles, setVehicles] = useState([]);
@@ -17,27 +82,30 @@ export default function Vehicles() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [filterOwnership, setFilterOwnership] = useState(''); // New state for ownership filter
 
   const load = async () => {
   setLoading(true);
   try {
     const [vRes, dRes] = await Promise.all([
-      vehiclesApi.getAll({ vehicle_type: filterType }), 
+      // Pass both filters to the API
+      vehiclesApi.getAll({ 
+        vehicle_type: filterType, 
+        ownership: filterOwnership 
+      }), 
       driversApi.getAll()
     ]);
     
     const rawVehicles = Array.isArray(vRes.data) ? vRes.data : vRes.data?.data ?? [];
     const rawDrivers = Array.isArray(dRes.data) ? dRes.data : dRes.data?.data ?? [];
 
-    // MAPPING: Convert database names to frontend names
     const mappedVehicles = rawVehicles.map(v => ({
       ...v,
-      plate_number: v.plate_no,      // Map plate_no to plate_number
-      engine_number: v.engine_no,    // Map engine_no to engine_number
-      chassis_number: v.chassis_no,  // Map chassis_no to chassis_number
-      
-      // Attempt to find the owner's name from the drivers list
-      owner_name: rawDrivers.find(d => d.license_no === v.license_no)?.full_name ?? v.license_no
+      plate_number: v.plate_no,
+      engine_number: v.engine_no,
+      chassis_number: v.chassis_no,
+      // Uses the owner_name from the SQL JOIN or finds it in the local list
+      owner_name: v.owner_name ?? rawDrivers.find(d => d.license_no === v.license_no)?.full_name ?? v.license_no
     }));
 
     setVehicles(mappedVehicles);
@@ -48,7 +116,7 @@ export default function Vehicles() {
   setLoading(false);
 };
 
-  useEffect(() => { load(); }, [filterType]);
+  useEffect(() => { load(); }, [filterType, filterOwnership]);
 
   const filtered = vehicles.filter(v =>
     [v.plate_number, v.make, v.model, v.color, v.owner_name].some(f => f?.toLowerCase().includes(search.toLowerCase()))
@@ -61,11 +129,22 @@ export default function Vehicles() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      if (modal === 'add') await vehiclesApi.create(form);
-      else await vehiclesApi.update(selected.plate_no, form);
+      const payload = {
+        ...form,
+        plate_no: form.plate_number,   // Map to backend name
+        engine_no: form.engine_number,
+        chassis_no: form.chassis_number,
+        ownership: form.ownership      // Ensure ownership is sent
+      };
+
+      if (modal === 'add') await vehiclesApi.create(payload);
+      else await vehiclesApi.update(selected.plate_no, payload);
+      
       await load();
       setTimeout(() => { setModal(null); setMsg(''); }, 600);
-    } catch (e) { setMsg('Error: ' + (e.response?.data?.message ?? e.message)); }
+    } catch (e) { 
+      setMsg('Error: ' + (e.response?.data?.message ?? e.message)); 
+    }
     setSaving(false);
   };
 
@@ -76,52 +155,6 @@ export default function Vehicles() {
   };
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
-
-  const FormFields = () => (
-    <div className="form-grid">
-      <div className="form-group">
-        <label className="form-label">Plate Number *</label>
-        <input className="form-control" name="plate_number" value={form.plate_number} onChange={handleChange} placeholder="AAA 1234" />
-      </div>
-      <div className="form-group">
-        <label className="form-label">Vehicle Type</label>
-        <select className="form-control" name="vehicle_type" value={form.vehicle_type} onChange={handleChange}>
-          {VEHICLE_TYPES.map(t => <option key={t}>{t}</option>)}
-        </select>
-      </div>
-      <div className="form-group">
-        <label className="form-label">Engine Number</label>
-        <input className="form-control" name="engine_number" value={form.engine_number} onChange={handleChange} placeholder="ENGINE123" />
-      </div>
-      <div className="form-group">
-        <label className="form-label">Chassis Number</label>
-        <input className="form-control" name="chassis_number" value={form.chassis_number} onChange={handleChange} placeholder="CHASSIS123" />
-      </div>
-      <div className="form-group">
-        <label className="form-label">Make (Brand)</label>
-        <input className="form-control" name="make" value={form.make} onChange={handleChange} placeholder="Toyota" />
-      </div>
-      <div className="form-group">
-        <label className="form-label">Model</label>
-        <input className="form-control" name="model" value={form.model} onChange={handleChange} placeholder="Vios" />
-      </div>
-      <div className="form-group">
-        <label className="form-label">Year</label>
-        <input className="form-control" type="number" name="year" value={form.year} onChange={handleChange} placeholder="2024" min="1900" max="2030" />
-      </div>
-      <div className="form-group">
-        <label className="form-label">Color</label>
-        <input className="form-control" name="color" value={form.color} onChange={handleChange} placeholder="White" />
-      </div>
-      <div className="form-group full">
-        <label className="form-label">Registered Owner (Driver)</label>
-        <select className="form-control" name="license_no" value={form.license_no ?? ''} onChange={handleChange}>
-          <option value="">— Select Owner —</option>
-          {drivers.map(d => <option key={d.license_no} value={d.license_no}>{d.full_name} · {d.license_no}</option>)}
-        </select>
-      </div>
-    </div>
-  );
 
   return (
     <div className="page-content fade-in">
@@ -141,6 +174,11 @@ export default function Vehicles() {
             {VEHICLE_TYPES.map(t => <option key={t}>{t}</option>)}
           </select>
           <button className="btn btn-secondary btn-sm" onClick={load}>↺ Refresh</button>
+          {/* New Ownership Filter Dropdown */}
+          <select className="filter-select" value={filterOwnership} onChange={e => setFilterOwnership(e.target.value)}>
+            <option value="">All Ownerships</option>
+            {OWNERSHIP_TYPES.map(o => <option key={o}>{o}</option>)}
+          </select>
         </div>
 
         {loading ? (
@@ -181,13 +219,21 @@ export default function Vehicles() {
       </div>
 
       {(modal === 'add' || modal === 'edit') && (
-        <Modal title={modal === 'add' ? '🚗 Register Vehicle' : '✏️ Edit Vehicle'} onClose={() => setModal(null)}
+        <Modal 
+          title={modal === 'add' ? '🚗 Register Vehicle' : '✏️ Edit Vehicle'} 
+          onClose={() => setModal(null)}
           footer={<>
             {msg && <span style={{ fontSize: 12, color: msg.startsWith('Error') ? 'var(--lto-red)' : 'green', flex: 1 }}>{msg}</span>}
             <button className="btn btn-secondary" onClick={() => setModal(null)}>Cancel</button>
             <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Vehicle'}</button>
           </>}>
-          <FormFields />
+          <FormFields 
+            form={form} 
+            handleChange={handleChange} 
+            drivers={drivers} 
+            VEHICLE_TYPES={VEHICLE_TYPES} 
+            OWNERSHIP_TYPES={OWNERSHIP_TYPES} 
+          />
         </Modal>
       )}
 
@@ -217,3 +263,4 @@ export default function Vehicles() {
     </div>
   );
 }
+
