@@ -69,8 +69,15 @@ export const createVehicle = async (req, res) => {
 
     const {
       plate_no, engine_no, chassis_no, ownership, vehicle_type, color, make, model, year, license_no,
-      registrations // Expected to be an array of objects
+      registrations
     } = req.body;
+
+    // 🛑 NEW VALIDATION: Check for duplicate Plate Number
+    const [existing] = await conn.query(vehicleQueries.selectByPlate, [plate_no]);
+    if (existing.length > 0) {
+      await conn.rollback();
+      return res.status(400).json({ success: false, message: 'Vehicle with this plate number already exists.' });
+    }
 
     const vehicleValues = [
       plate_no, engine_no, chassis_no, ownership, vehicle_type, color, make, model, year, license_no
@@ -84,7 +91,7 @@ export const createVehicle = async (req, res) => {
       for (const reg of registrations) {
         await conn.query(registrationQueries.insert, [
           reg.registration_no, reg.expiration_date, reg.registration_date, 
-          plate_no, engine_no, chassis_no // these 3 come from the parent vehicle
+          plate_no, engine_no, chassis_no 
         ]);
       }
     }
@@ -96,10 +103,10 @@ export const createVehicle = async (req, res) => {
     await conn.rollback(); 
     console.error('Error creating vehicle:', error);
     
+    // Fallback for engine/chassis duplicates
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ success: false, message: 'Plate, Engine, or Chassis number already exists' });
+      return res.status(400).json({ success: false, message: 'Engine or Chassis number already exists' });
     }
-    // Foreign key constraint failure (e.g., driver license doesn't exist)
     if (error.code === 'ER_NO_REFERENCED_ROW_2') {
       return res.status(400).json({ success: false, message: 'The provided driver license_no does not exist' });
     }
@@ -114,42 +121,44 @@ export const createVehicle = async (req, res) => {
 // ==========================================
 export const updateVehicle = async (req, res) => {
   const conn = await pool.getConnection();
-
   try {
     await conn.beginTransaction();
-
-    const { plate_no } = req.params;
-    // ADDED: registrations, engine_no, and chassis_no to the destructuring
+    const { plate_no } = req.params; // The OLD plate number
     const { 
-      ownership, vehicle_type, color, make, model, year, license_no,
+      plate_number, ownership, vehicle_type, color, make, model, year, license_no,
       registrations, engine_no, chassis_no 
     } = req.body;
 
+    const newPlateNo = plate_number || plate_no;
+
+    // 🛑 VALIDATION: Check if they changed the plate and if the new one exists
+    if (newPlateNo !== plate_no) {
+      const [existing] = await conn.query(vehicleQueries.selectByPlate, [newPlateNo]);
+      if (existing.length > 0) {
+        await conn.rollback();
+        return res.status(400).json({ success: false, message: 'This Plate Number is already registered to another vehicle.' });
+      }
+    }
+
     const vehicleValues = [
-      ownership, vehicle_type, color, make, model, year, license_no, plate_no
+      newPlateNo, engine_no, chassis_no, ownership, vehicle_type, color, make, model, year, license_no,
+      plate_no // OLD plate number for the WHERE clause
     ];
 
-    // 1. Update Vehicle
     const [result] = await conn.query(vehicleQueries.update, vehicleValues);
     if (result.affectedRows === 0) {
       await conn.rollback();
       return res.status(404).json({ success: false, message: 'Vehicle not found' });
     }
 
-    // 2. Wipe & Replace Registrations
+    // Wipe & Replace Registrations using the NEW plate number
     if (registrations && Array.isArray(registrations)) {
-      await conn.query(registrationQueries.deleteAllForVehicle, [plate_no]);
-      
+      await conn.query(registrationQueries.deleteAllForVehicle, [newPlateNo]);
       if (registrations.length > 0) {
-        // Validation check for composite keys
-        if (!engine_no || !chassis_no) {
-          throw new Error("engine_no and chassis_no must be provided to update registrations");
-        }
-
         for (const reg of registrations) {
           await conn.query(registrationQueries.insert, [
             reg.registration_no, reg.expiration_date, reg.registration_date, 
-            plate_no, engine_no, chassis_no
+            newPlateNo, engine_no, chassis_no
           ]);
         }
       }
@@ -157,11 +166,9 @@ export const updateVehicle = async (req, res) => {
 
     await conn.commit();
     res.status(200).json({ success: true, message: 'Vehicle updated successfully' });
-
   } catch (error) {
     await conn.rollback();
     console.error('Error updating vehicle:', error);
-    // Returning the specific error message helps debug frontend issues
     res.status(500).json({ success: false, message: 'Server Error', error: error.message });
   } finally {
     conn.release();

@@ -60,14 +60,28 @@ export const createTicket = async (req, res) => {
       violations // Expected: [{ violation_name: '...', fine_amount: 1000 }, ...]
     } = req.body;
 
+    // 🛑 NEW VALIDATION: Prevent accidental double-submissions (Logical Duplicate Check)
+    // Checks if the exact same driver & car got a ticket on the exact same date
+    const checkDuplicateSql = `
+      SELECT ticket_id FROM violation_ticket 
+      WHERE license_no = ? AND plate_no = ? AND date = ?
+    `;
+    const [existingTicket] = await conn.query(checkDuplicateSql, [license_no, plate_no, date]);
+    
+    if (existingTicket.length > 0) {
+      await conn.rollback();
+      return res.status(400).json({ 
+        success: false, 
+        message: 'A ticket for this driver and vehicle was already recorded on this date.' 
+      });
+    }
+
     const ticketValues = [
       location, date, violation_status || 'Unpaid', apprehending_officer, license_no, plate_no, engine_no, chassis_no
     ];
 
     // 1. Insert Ticket
     const [ticketResult] = await conn.query(ticketQueries.insert, ticketValues);
-    
-    // Grab the auto-generated ticket_id
     const newTicketId = ticketResult.insertId;
     
     // 2. Insert Violations
@@ -84,7 +98,7 @@ export const createTicket = async (req, res) => {
     await conn.rollback(); 
     console.error('Error creating ticket:', error);
     
-    // Foreign key constraint failure (e.g., driver or vehicle doesn't exist)
+    // Foreign key constraint failure
     if (error.code === 'ER_NO_REFERENCED_ROW_2') {
       return res.status(400).json({ success: false, message: 'Invalid Driver License or Vehicle details provided.' });
     }
@@ -109,18 +123,34 @@ export const updateTicket = async (req, res) => {
       violations 
     } = req.body;
 
+    // 🛑 NEW VALIDATION: Logical Duplicate Check
+    // Ensures this edit doesn't perfectly match a DIFFERENT ticket already in the database
+    const checkDuplicateSql = `
+      SELECT ticket_id FROM violation_ticket 
+      WHERE license_no = ? AND plate_no = ? AND date = ? AND ticket_id != ?
+    `;
+    const [existingTicket] = await conn.query(checkDuplicateSql, [license_no, plate_no, date, ticket_id]);
+    
+    if (existingTicket.length > 0) {
+      await conn.rollback();
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Another ticket for this driver and vehicle already exists on this date.' 
+      });
+    }
+
     const ticketValues = [
       location, date, violation_status, apprehending_officer, license_no, plate_no, engine_no, chassis_no, ticket_id
     ];
 
-    // 1. Update Ticket
+    // 1. Update Ticket Base Details
     const [result] = await conn.query(ticketQueries.update, ticketValues);
     if (result.affectedRows === 0) {
       await conn.rollback();
       return res.status(404).json({ success: false, message: 'Ticket not found' });
     }
 
-    // 2. Wipe & Replace Violations
+    // 2. Wipe & Replace Violations array
     if (violations && Array.isArray(violations)) {
       await conn.query(violationQueries.deleteAllForTicket, [ticket_id]);
       
@@ -137,6 +167,10 @@ export const updateTicket = async (req, res) => {
   } catch (error) {
     await conn.rollback();
     console.error('Error updating ticket:', error);
+    
+    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+      return res.status(400).json({ success: false, message: 'Invalid Driver License or Vehicle details provided.' });
+    }
     res.status(500).json({ success: false, message: 'Server Error', error: error.message });
   } finally {
     conn.release();

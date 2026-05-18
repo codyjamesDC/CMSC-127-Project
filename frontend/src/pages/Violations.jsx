@@ -3,11 +3,15 @@ import Modal from '../components/Modal';
 import { violationsApi, driversApi, vehiclesApi } from '../api/client';
 
 const VIOLATION_TYPES = ['Overspeeding', 'Reckless Driving', 'Illegal Parking', 'Beating Red Light', 'No Helmet', 'No Seatbelt', 'Drunk Driving', 'Illegal Overtaking', 'Obstruction', 'Others'];
-const STATUSES = ['unpaid', 'paid', 'contested'];
-const emptyForm = { violation_type: 'Overspeeding', date_of_violation: '', location: '', fine_amount: '', apprehending_officer: '', violation_status: 'unpaid', driver_id: '', vehicle_id: '' };
+// REMOVED 'contested', capitalized to match DB defaults
+const STATUSES = ['Unpaid', 'Paid']; 
+const emptyForm = { violation_type: 'Overspeeding', date_of_violation: '', location: '', fine_amount: '', apprehending_officer: '', violation_status: 'Unpaid', driver_id: '', vehicle_id: '' };
 
 function StatusBadge({ status }) {
-  return <span className={`badge badge-${status}`}>{status}</span>;
+  if (!status) return null;
+  // CSS classes are usually lowercase (e.g., badge-unpaid), so we force lowercase here
+  const normalizedStatus = status.toLowerCase(); 
+  return <span className={`badge badge-${normalizedStatus}`}>{status}</span>;
 }
 
 export default function Violations() {
@@ -28,7 +32,7 @@ export default function Violations() {
     setLoading(true);
     try {
       const [vioRes, dRes, vRes] = await Promise.all([
-        violationsApi.getAll({ violation_status: filterStatus }),
+        violationsApi.getAll(), // Removed filterStatus from API call, doing it purely in frontend now
         driversApi.getAll(),
         vehiclesApi.getAll(),
       ]);
@@ -39,27 +43,35 @@ export default function Violations() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [filterStatus]);
+  // Only load once on mount, filtering happens instantly on the frontend now
+  useEffect(() => { load(); }, []);
 
   const filtered = violations.filter(v => {
+    // 1. Search Box Match
     const violationName = v.violations?.[0]?.violation_name || '';
     const driverRef = v.driver_name || v.license_no || '';
+    const ticketIdString = v.ticket_id ? `TKT-${String(v.ticket_id).padStart(5, '0')}` : '';
     
-    return [violationName, v.location, driverRef, v.plate_no, v.apprehending_officer]
-      .some(f => f?.toLowerCase().includes(search.toLowerCase()));
+    const matchesSearch = !search.trim() || [
+      violationName, v.location, driverRef, v.plate_no, v.apprehending_officer, ticketIdString
+    ].some(f => f?.toLowerCase().includes(search.toLowerCase()));
+
+    // 2. Status Dropdown Match
+    const matchesStatus = !filterStatus || v.violation_status?.toLowerCase() === filterStatus.toLowerCase();
+
+    return matchesSearch && matchesStatus;
   });
 
   const openAdd = () => { setForm(emptyForm); setModal('add'); setMsg(''); };
   
   const openEdit = (v) => { 
-    // Map the backend structure back to the frontend form state
     setForm({ 
       violation_type: v.violations?.[0]?.violation_name ?? 'Overspeeding',
       date_of_violation: v.date ?? '',
       location: v.location ?? '',
       fine_amount: v.violations?.[0]?.fine_amount ?? '',
       apprehending_officer: v.apprehending_officer ?? '',
-      violation_status: v.violation_status ?? 'unpaid',
+      violation_status: v.violation_status ?? 'Unpaid',
       driver_id: v.license_no ?? '',
       vehicle_id: v.plate_no ?? ''
     }); 
@@ -73,7 +85,6 @@ export default function Violations() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 1. Find the selected vehicle from the dropdown to get its engine and chassis numbers
       const selectedVehicle = vehicles.find(v => v.plate_no === form.vehicle_id);
 
       if (!selectedVehicle) {
@@ -88,16 +99,15 @@ export default function Violations() {
         return;
       }
 
-      // 2. Map frontend form state to the exact schema the backend expects
       const payload = {
         location: form.location,
         date: form.date_of_violation,
         violation_status: form.violation_status,
         apprehending_officer: form.apprehending_officer,
-        license_no: form.driver_id,                 // Maps driver dropdown to license_no
-        plate_no: selectedVehicle.plate_no,         // From the vehicle array
-        engine_no: selectedVehicle.engine_no,       // From the vehicle array (REQUIRED for DB constraints!)
-        chassis_no: selectedVehicle.chassis_no,     // From the vehicle array (REQUIRED for DB constraints!)
+        license_no: form.driver_id,                 
+        plate_no: selectedVehicle.plate_no,         
+        engine_no: selectedVehicle.engine_no,       
+        chassis_no: selectedVehicle.chassis_no,     
         violations: [
           {
             violation_name: form.violation_type, 
@@ -106,7 +116,6 @@ export default function Violations() {
         ]
       };
 
-      // 3. Send to API
       if (modal === 'add') {
         await violationsApi.create(payload);
       } else {
@@ -191,7 +200,7 @@ export default function Violations() {
           </div>
           <select className="filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
             <option value="">All Statuses</option>
-            {STATUSES.map(s => <option key={s}>{s}</option>)}
+            {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <button className="btn btn-secondary btn-sm" onClick={load}>↺ Refresh</button>
         </div>
@@ -206,36 +215,43 @@ export default function Violations() {
           <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
-                <tr><th>#</th><th>Violation Type</th><th>Driver</th><th>Plate No.</th><th>Date</th><th>Location</th><th>Fine (₱)</th><th>Status</th><th>Actions</th></tr>
+                <tr>
+                  <th>#</th>
+                  <th>Ticket ID</th>
+                  <th>Violation Type</th>
+                  <th>Driver</th>
+                  <th>Plate No.</th>
+                  <th>Date</th>
+                  <th>Location</th>
+                  <th>Fine (₱)</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
               </thead>
               <tbody>
                 {filtered.map((v, i) => (
                   <tr key={v.ticket_id ?? i}>
                     <td style={{ color: 'var(--lto-text-muted)', fontWeight: 600 }}>{i + 1}</td>
                     
-                    {/* Read violation_name from nested array */}
+                    <td>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--lto-blue)', fontSize: 13 }}>
+                        {v.ticket_id ? `TKT-${String(v.ticket_id).padStart(5, '0')}` : '—'}
+                      </span>
+                    </td>
+                    
                     <td style={{ fontWeight: 600 }}>{v.violations?.[0]?.violation_name ?? '—'}</td>
-                    
-                    {/* Use driver_name if SQL joined it, otherwise fallback to license_no */}
                     <td style={{ fontSize: 12 }}>{v.driver_name ?? v.license_no ?? '—'}</td>
-                    
                     <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--lto-blue)', fontSize: 12 }}>
                       {v.plate_no ?? '—'}
                     </td>
-                    
                     <td style={{ fontSize: 12 }}>
                       {v.date ? new Date(v.date).toLocaleDateString('en-PH') : '—'}
                     </td>
-                    
                     <td style={{ fontSize: 12 }}>{v.location ?? '—'}</td>
-                    
-                    {/* Read fine_amount from nested array */}
                     <td style={{ fontWeight: 700 }}>
                       ₱{Number(v.violations?.[0]?.fine_amount ?? 0).toLocaleString()}
                     </td>
-                    
                     <td><StatusBadge status={v.violation_status} /></td>
-                    
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn btn-secondary btn-sm" onClick={() => openView(v)}>View</button>
@@ -269,6 +285,7 @@ export default function Violations() {
           footer={<><button className="btn btn-primary" onClick={() => openEdit(selected)}>Edit</button><button className="btn btn-secondary" onClick={() => setModal(null)}>Close</button></>}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {[
+              ['Ticket ID', selected.ticket_id ? `TKT-${String(selected.ticket_id).padStart(5, '0')}` : '—'],
               ['Violation Type', selected.violations?.[0]?.violation_name],
               ['Status', selected.violation_status],
               ['Date', selected.date ? new Date(selected.date).toLocaleDateString('en-PH') : '—'],

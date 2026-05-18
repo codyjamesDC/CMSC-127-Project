@@ -42,21 +42,21 @@ CREATE TABLE IF NOT EXISTS `driver_address` (
     license_no      VARCHAR(15)     NOT NULL,
     address         VARCHAR(100)    NOT NULL,
     PRIMARY KEY (`license_no`, `address`),
-    FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`)
+    FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `driver_license_code` (
     license_no      VARCHAR(15)     NOT NULL,
     license_code    VARCHAR(10)     NOT NULL,
     PRIMARY KEY (`license_no`, `license_code`),
-    FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`)
+    FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS `driver_condition` (
     license_no      VARCHAR(15)     NOT NULL,
     `condition`       VARCHAR(60)     NOT NULL,
     PRIMARY KEY (`license_no`, `condition`),
-    FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`)
+    FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ============================================================
@@ -88,8 +88,8 @@ CREATE TABLE IF NOT EXISTS `vehicle_registration` (
     engine_no           VARCHAR(20)     NOT NULL,
     chassis_no          VARCHAR(20)     NOT NULL,
     PRIMARY KEY (`registration_no`),
-    FOREIGN KEY (`plate_no`, `engine_no`, `chassis_no`)
-        REFERENCES `vehicle`(`plate_no`, `engine_no`, `chassis_no`)
+    FOREIGN KEY (`plate_no`, `engine_no`, `chassis_no`) 
+        REFERENCES `vehicle`(`plate_no`, `engine_no`, `chassis_no`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ============================================================
@@ -106,9 +106,9 @@ CREATE TABLE IF NOT EXISTS `violation_ticket` (
     engine_no               VARCHAR(20)     NOT NULL,
     chassis_no              VARCHAR(20)     NOT NULL,
     PRIMARY KEY (`ticket_id`),
-    FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`),
+    FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (`plate_no`, `engine_no`, `chassis_no`) 
-        REFERENCES `vehicle`(`plate_no`, `engine_no`, `chassis_no`)
+    REFERENCES `vehicle`(`plate_no`, `engine_no`, `chassis_no`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ============================================================
@@ -120,5 +120,5 @@ CREATE TABLE IF NOT EXISTS `violation` (
     fine_amount     DECIMAL(10,2)   NOT NULL,
     ticket_id       INT             NOT NULL,
     PRIMARY KEY (`violation_id`),
-    FOREIGN KEY (`ticket_id`) REFERENCES `violation_ticket`(`ticket_id`)
+    FOREIGN KEY (`ticket_id`) REFERENCES `violation_ticket`(`ticket_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;

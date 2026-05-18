@@ -1,19 +1,22 @@
+// frontend/src/pages/Drivers.jsx
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { driversApi } from '../api/client';
 
 const LICENSE_TYPES = ['Student Permit', 'Non-Professional', 'Professional'];
 const LICENSE_STATUSES = ['Active', 'Expired', 'Suspended']; 
-const SEXES = ['M', 'F']; // Matching the CHAR(1) in your schema
+const SEXES = ['M', 'F']; 
 
 const emptyForm = {
   full_name: '', 
   date_of_birth: '', 
   sex: 'M', 
-  address: '',
+  addresses: [''],       // Array for multiple
+  conditions: [],        // Array for multiple
+  license_codes: [],     // Array for multiple
   license_number: '', 
   license_type: 'Non-Professional',
-  license_status: 'Active', // Default to Active
+  license_status: 'Active',
   issue_date: '', 
   expiration_date: '',
 };
@@ -29,7 +32,7 @@ export default function Drivers() {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [modal, setModal] = useState(null); // null | 'add' | 'edit' | 'view'
+  const [modal, setModal] = useState(null); 
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -37,79 +40,104 @@ export default function Drivers() {
 
   const load = async () => {
     setLoading(true);
-  try {
-    const res = await driversApi.getAll({ license_type: filterType, license_status: filterStatus });
-    const rawData = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+    try {
+      const res = await driversApi.getAll({ license_type: filterType, license_status: filterStatus });
+      const rawData = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
 
-    // ADDED: Map database fields to frontend fields 
-    const mappedDrivers = rawData.map(d => ({
-      ...d,
-      full_name: `${d.fname} ${d.mname ? d.mname + ' ' : ''}${d.lname}`, // Combines fname, mname, lname 
-      // MAPPING DATABASE FIELDS TO FRONTEND NAMES
-      license_number: d.license_no, 
-      date_of_birth: d.bday,        // Maps 'bday' to 'date_of_birth'
-      issue_date: d.issued_date,    // Maps 'issued_date' to 'issue_date'
-      expiration_date: d.expiry_date, 
-      
-      // Since address is in a supporting table, ensure your backend join 
-      // returns it, or map it here if it's currently undefined
-      address: d.address || '—' 
-    }));
+      const mappedDrivers = rawData.map(d => ({
+        ...d,
+        full_name: `${d.fname} ${d.mname ? d.mname + ' ' : ''}${d.lname}`, 
+        license_number: d.license_no, 
+        date_of_birth: d.bday,        
+        issue_date: d.issued_date,    
+        expiration_date: d.expiry_date, 
+        addresses: d.addresses || [],
+        conditions: d.conditions || [],
+        license_codes: d.license_codes || []
+      }));
 
-    setDrivers(mappedDrivers);
-  } catch { 
-    setError('Failed to load drivers. Check backend connection.'); 
-  }
-  setLoading(false);
-};
+      setDrivers(mappedDrivers);
+    } catch { 
+      setError('Failed to load drivers. Check backend connection.'); 
+    }
+    setLoading(false);
+  };
 
   useEffect(() => { load(); }, [filterType, filterStatus]);
 
   const filtered = drivers.filter(d => {
-  // 1. Search Logic: Returns true if the search bar is empty OR if the term matches a field
-  const matchesSearch = !search.trim() || [
-    d.full_name, 
-    d.license_number, 
-    d.address
-  ].some(field => field?.toLowerCase().includes(search.toLowerCase()));
+    // Check search against name, license, and ALL addresses
+    const matchesSearch = !search.trim() || [
+      d.full_name, 
+      d.license_number, 
+      d.addresses.join(' ')
+    ].some(field => field?.toLowerCase().includes(search.toLowerCase()));
 
-  // 2. Exact Dropdown Matches: Only filters if a specific type or status is selected
-  const matchesType = !filterType || d.license_type === filterType;
-  const matchesStatus = !filterStatus || d.license_status === filterStatus;
+    const matchesType = !filterType || d.license_type === filterType;
+    const matchesStatus = !filterStatus || d.license_status === filterStatus;
 
-  // Only drivers that meet ALL active criteria will be shown
-  return matchesSearch && matchesType && matchesStatus;
-});
+    return matchesSearch && matchesType && matchesStatus;
+  });
 
   const openAdd = () => { setForm(emptyForm); setModal('add'); setMsg(''); };
-  const openEdit = (d) => { setForm({ ...d }); setSelected(d); setModal('edit'); setMsg(''); };
+  
+  const openEdit = (d) => { 
+    setForm({ 
+      ...d,
+      addresses: d.addresses?.length ? d.addresses : [''], 
+      conditions: d.conditions || [],
+      license_codes: d.license_codes || []
+    }); 
+    setSelected(d); 
+    setModal('edit'); 
+    setMsg(''); 
+  };
+  
   const openView = (d) => { setSelected(d); setModal('view'); };
 
-  const handleSave = async () => {
-  setSaving(true);
-  try {
-    // Create a copy of the form and clean the date fields
-    const payload = {
-      ...form,
-      date_of_birth: form.date_of_birth?.split('T')[0],
-      issue_date: form.issue_date?.split('T')[0],
-      expiration_date: form.expiration_date?.split('T')[0],
-    };
+  // --- Dynamic Array Handlers ---
+  const handleArrayChange = (field, index, value) => {
+    const newArray = [...form[field]];
+    newArray[index] = value;
+    setForm({ ...form, [field]: newArray });
+  };
+  const addArrayItem = (field) => {
+    setForm({ ...form, [field]: [...form[field], ''] });
+  };
+  const removeArrayItem = (field, index) => {
+    const newArray = [...form[field]];
+    newArray.splice(index, 1);
+    setForm({ ...form, [field]: newArray });
+  };
 
-    if (modal === 'add') {
-      await driversApi.create(payload); // Send cleaned payload
-    } else {
-      await driversApi.update(selected.license_no, payload); // Send cleaned payload
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // Clean up empty strings from arrays before sending
+      const payload = {
+        ...form,
+        date_of_birth: form.date_of_birth?.split('T')[0],
+        issue_date: form.issue_date?.split('T')[0],
+        expiration_date: form.expiration_date?.split('T')[0],
+        addresses: form.addresses.filter(a => a.trim() !== ''),
+        conditions: form.conditions.filter(c => c.trim() !== ''),
+        license_codes: form.license_codes.filter(lc => lc.trim() !== '')
+      };
+
+      if (modal === 'add') {
+        await driversApi.create(payload); 
+      } else {
+        await driversApi.update(selected.license_no, payload); 
+      }
+      
+      setMsg('Saved successfully.');
+      await load();
+      setTimeout(() => { setModal(null); setMsg(''); }, 800);
+    } catch (e) {
+      setMsg('Error: ' + (e.response?.data?.message ?? e.message));
     }
-    
-    setMsg('Saved successfully.');
-    await load();
-    setTimeout(() => { setModal(null); setMsg(''); }, 800);
-  } catch (e) {
-    setMsg('Error: ' + (e.response?.data?.message ?? e.message));
-  }
-  setSaving(false);
-};
+    setSaving(false);
+  };
 
   const handleDelete = async (d) => {
     if (!window.confirm(`Delete driver "${d.full_name}"? This cannot be undone.`)) return;
@@ -120,6 +148,85 @@ export default function Drivers() {
   };
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+
+  const FormFields = () => (
+    <div className="form-grid">
+      <div className="form-group full">
+        <label className="form-label">Full Name *</label>
+        <input className="form-control" name="full_name" value={form.full_name} onChange={handleChange} placeholder="Juan Dela Cruz" />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Date of Birth *</label>
+        <input className="form-control" type="date" name="date_of_birth" value={form.date_of_birth?.split('T')[0] ?? ''} onChange={handleChange} />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Sex</label>
+        <select className="form-control" name="sex" value={form.sex} onChange={handleChange}>
+          {SEXES.map(s => <option key={s}>{s}</option>)}
+        </select>
+      </div>
+
+      {/* DYNAMIC ARRAYS */}
+      <div className="form-group full" style={{ background: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 8 }}>
+        <label className="form-label">Addresses</label>
+        {form.addresses.map((addr, i) => (
+          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <input className="form-control" value={addr} onChange={e => handleArrayChange('addresses', i, e.target.value)} placeholder="Brgy., City, Province" />
+            <button type="button" className="btn btn-danger" onClick={() => removeArrayItem('addresses', i)}>X</button>
+          </div>
+        ))}
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('addresses')}>+ Add Address</button>
+      </div>
+
+      <div className="form-group" style={{ background: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 8 }}>
+        <label className="form-label">Conditions</label>
+        {form.conditions.map((cond, i) => (
+          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <input className="form-control" value={cond} onChange={e => handleArrayChange('conditions', i, e.target.value)} placeholder="e.g. Wear eyeglasses" />
+            <button type="button" className="btn btn-danger" onClick={() => removeArrayItem('conditions', i)}>X</button>
+          </div>
+        ))}
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('conditions')}>+ Add Condition</button>
+      </div>
+
+      <div className="form-group" style={{ background: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 8 }}>
+        <label className="form-label">License Codes</label>
+        {form.license_codes.map((code, i) => (
+          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <input className="form-control" value={code} onChange={e => handleArrayChange('license_codes', i, e.target.value)} placeholder="e.g. B, B1" />
+            <button type="button" className="btn btn-danger" onClick={() => removeArrayItem('license_codes', i)}>X</button>
+          </div>
+        ))}
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('license_codes')}>+ Add Code</button>
+      </div>
+
+      {/* STANDARD FIELDS */}
+      <div className="form-group full">
+        <label className="form-label">License Number *</label>
+        <input className="form-control" name="license_number" value={form.license_number} onChange={handleChange} placeholder="N01-23-456789" />
+      </div>
+      <div className="form-group">
+        <label className="form-label">License Type</label>
+        <select className="form-control" name="license_type" value={form.license_type} onChange={handleChange}>
+          {LICENSE_TYPES.map(t => <option key={t}>{t}</option>)}
+        </select>
+      </div>
+      <div className="form-group">
+        <label className="form-label">License Status</label>
+        <select className="form-control" name="license_status" value={form.license_status} onChange={handleChange}>
+          {LICENSE_STATUSES.map(s => <option key={s}>{s}</option>)}
+        </select>
+      </div>
+      <div className="form-group">
+        <label className="form-label">Issue Date</label>
+        <input className="form-control" type="date" name="issue_date" value={form.issue_date?.split('T')[0] ?? ''} onChange={handleChange} />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Expiration Date</label>
+        <input className="form-control" type="date" name="expiration_date" value={form.expiration_date?.split('T')[0] ?? ''} onChange={handleChange} />
+      </div>
+    </div>
+  );
 
   return (
     <div className="page-content fade-in">
@@ -157,7 +264,7 @@ export default function Drivers() {
             <table>
               <thead>
                 <tr>
-                  <th>#</th><th>Full Name</th><th>License No.</th><th>Type</th><th>Status</th><th>Sex</th><th>Expiration</th><th>Actions</th>
+                  <th>#</th><th>Full Name</th><th>License No.</th><th>Type</th><th>Status</th><th>Addresses</th><th>Expiration</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -168,7 +275,17 @@ export default function Drivers() {
                     <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{d.license_number}</td>
                     <td><span style={{ fontSize: 12, background: 'rgba(0,48,135,0.08)', color: 'var(--lto-blue)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>{d.license_type}</span></td>
                     <td><StatusBadge status={d.license_status} /></td>
-                    <td>{d.sex}</td>
+                    
+                    {/* Render first address with an indicator if there are more */}
+                    <td style={{ fontSize: 12 }}>
+                      {d.addresses.length > 0 ? (
+                        <>
+                          {d.addresses[0]}
+                          {d.addresses.length > 1 && <span style={{ color: 'var(--lto-blue)', fontWeight: 'bold' }}> (+{d.addresses.length - 1})</span>}
+                        </>
+                      ) : '—'}
+                    </td>
+
                     <td style={{ fontSize: 12 }}>{d.expiration_date ? new Date(d.expiration_date).toLocaleDateString('en-PH') : '—'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -185,7 +302,6 @@ export default function Drivers() {
         )}
       </div>
 
-      {/* ADD / EDIT MODAL */}
       {(modal === 'add' || modal === 'edit') && (
         <Modal
           title={modal === 'add' ? '👤 Add New Driver' : '✏️ Edit Driver'}
@@ -196,54 +312,10 @@ export default function Drivers() {
             <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Driver'}</button>
           </>}
         >
-          <div className="form-grid">
-            <div className="form-group full">
-              <label className="form-label">Full Name *</label>
-              <input className="form-control" name="full_name" value={form.full_name} onChange={handleChange} placeholder="Juan Dela Cruz" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Date of Birth *</label>
-              <input className="form-control" type="date" name="date_of_birth" value={form.date_of_birth?.split('T')[0] ?? ''} onChange={handleChange} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Sex</label>
-              <select className="form-control" name="sex" value={form.sex} onChange={handleChange}>
-                {SEXES.map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div className="form-group full">
-              <label className="form-label">Address</label>
-              <input className="form-control" name="address" value={form.address} onChange={handleChange} placeholder="Brgy., City, Province" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">License Number *</label>
-              <input className="form-control" name="license_number" value={form.license_number} onChange={handleChange} placeholder="N01-23-456789" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">License Type</label>
-              <select className="form-control" name="license_type" value={form.license_type} onChange={handleChange}>
-                {LICENSE_TYPES.map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">License Status</label>
-              <select className="form-control" name="license_status" value={form.license_status} onChange={handleChange}>
-                {LICENSE_STATUSES.map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Issue Date</label>
-              <input className="form-control" type="date" name="issue_date" value={form.issue_date?.split('T')[0] ?? ''} onChange={handleChange} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Expiration Date</label>
-              <input className="form-control" type="date" name="expiration_date" value={form.expiration_date?.split('T')[0] ?? ''} onChange={handleChange} />
-            </div>
-          </div>
+          {FormFields()}
         </Modal>
       )}
 
-      {/* VIEW MODAL */}
       {modal === 'view' && selected && (
         <Modal title="👤 Driver Details" onClose={() => setModal(null)}
           footer={<><button className="btn btn-primary" onClick={() => openEdit(selected)}>Edit</button><button className="btn btn-secondary" onClick={() => setModal(null)}>Close</button></>}>
@@ -257,9 +329,14 @@ export default function Drivers() {
               ['License Status', selected.license_status],
               ['Issue Date', selected.issue_date ? new Date(selected.issue_date).toLocaleDateString('en-PH') : '—'],
               ['Expiration Date', selected.expiration_date ? new Date(selected.expiration_date).toLocaleDateString('en-PH') : '—'],
-              ['Address', selected.address],
+              
+              // Map arrays nicely using join
+              ['Conditions', selected.conditions?.length ? selected.conditions.join(', ') : 'None'],
+              ['License Codes', selected.license_codes?.length ? selected.license_codes.join(', ') : 'None'],
+              ['Addresses', selected.addresses?.length ? selected.addresses.join(' | ') : '—'],
+              
             ].map(([label, val]) => (
-              <div key={label} style={{ gridColumn: label === 'Address' ? '1 / -1' : undefined }}>
+              <div key={label} style={{ gridColumn: label === 'Addresses' ? '1 / -1' : undefined }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--lto-blue)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: 'Barlow Condensed, sans-serif' }}>{label}</div>
                 <div style={{ fontSize: 14, fontWeight: 500 }}>{val || '—'}</div>
               </div>
