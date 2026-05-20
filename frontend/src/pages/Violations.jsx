@@ -162,7 +162,7 @@ export default function Violations() {
   const FormFields = () => (
     <div className="form-grid">
       <div className="form-group">
-        <label className="form-label">Violation Type *</label>
+        <label className="form-label">Violation Type <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" name="violation_type" list="violation-types-list" value={form.violation_type} onChange={handleChange} placeholder="e.g. Overspeeding" />
         <datalist id="violation-types-list">
           {VIOLATION_TYPES.map(t => <option key={t} value={t} />)}
@@ -175,7 +175,7 @@ export default function Violations() {
         </select>
       </div>
       <div className="form-group">
-        <label className="form-label">Date of Violation *</label>
+        <label className="form-label">Date of Violation <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" type="date" name="date"
           value={form.date?.split('T')[0] ?? ''}
           max={today}

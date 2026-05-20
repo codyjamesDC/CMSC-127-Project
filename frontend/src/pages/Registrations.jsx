@@ -136,11 +136,11 @@ export default function Registrations() {
   const FormFields = () => (
     <div className="form-grid">
       <div className="form-group full">
-        <label className="form-label">Registration Number *</label>
+        <label className="form-label">Registration Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" name="registration_number" value={form.registration_number} onChange={handleChange} placeholder="REG-2025-00001" />
       </div>
       <div className="form-group full">
-        <label className="form-label">Vehicle *</label>
+        <label className="form-label">Vehicle <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <select className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange}>
           <option value="">— Select Vehicle —</option>
           {vehicles.map(v => (
