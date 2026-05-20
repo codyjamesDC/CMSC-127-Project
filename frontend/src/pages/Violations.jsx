@@ -5,10 +5,8 @@ import { violationsApi, driversApi, vehiclesApi } from '../api/client';
 import { validateForm } from '../utils/validation';
 
 const VIOLATION_TYPES = ['Overspeeding', 'Reckless Driving', 'Illegal Parking', 'Beating Red Light', 'No Helmet', 'No Seatbelt', 'Drunk Driving', 'Illegal Overtaking', 'Obstruction', 'Others'];
-// P0 1.2 FIX: Title Case to match DB seeds ('Unpaid'/'Paid' not 'unpaid'/'paid')
 const STATUSES = ['Unpaid', 'Paid', 'Contested'];
 
-// P0 1.1 FIX: emptyForm uses backend field names (license_no, plate_no, date, violations[])
 const emptyForm = {
   location: '',
   date: '',
@@ -21,11 +19,12 @@ const emptyForm = {
 };
 
 const ticketRules = {
-  location: { required: true },
-  date: { required: true },
-  violation_type: { required: true },
-  fine_amount: { required: true, type: 'number' },
-  apprehending_officer: { required: true }
+  location:             { required: true },
+  date:                 { required: true, notFuture: true,
+                          msg: 'Violation date cannot be in the future.' },
+  violation_type:       { required: true },
+  fine_amount:          { required: true, type: 'number' },
+  apprehending_officer: { required: true },
 };
 
 function StatusBadge({ status }) {
@@ -79,7 +78,6 @@ export default function Violations() {
       violationName, v.location, driverRef, v.plate_no, v.apprehending_officer, ticketIdString,
     ].some(f => f?.toLowerCase().includes(search.toLowerCase()));
 
-    // P0 1.2 FIX: case-insensitive comparison handles both DB casing and filter value
     const matchesStatus = !filterStatus || v.violation_status?.toLowerCase() === filterStatus.toLowerCase();
 
     return matchesSearch && matchesStatus;
@@ -88,7 +86,6 @@ export default function Violations() {
   const openAdd = () => { setForm(emptyForm); setModal('add'); setMsg(''); };
 
   const openEdit = (v) => {
-    // P0 1.1 FIX: map stored ticket data back to flat form state using backend field names
     setForm({
       location: v.location ?? '',
       date: v.date ?? '',
@@ -107,7 +104,6 @@ export default function Violations() {
   const openView = (v) => { setSelected(v); setModal('view'); };
 
   const handleSave = async () => {
-    // Validate before proceeding
     const errors = validateForm(form, ticketRules);
     if (Object.keys(errors).length > 0) {
       setMsg(`Error: ${Object.values(errors)[0]}`);
@@ -116,12 +112,11 @@ export default function Violations() {
     setSaving(true);
     try {
       if (!form.license_no) { setMsg('Error: Please select a driver.'); setSaving(false); return; }
-      if (!form.plate_no) { setMsg('Error: Please select a vehicle.'); setSaving(false); return; }
+      if (!form.plate_no)   { setMsg('Error: Please select a vehicle.'); setSaving(false); return; }
 
       const selectedVehicle = vehicles.find(v => v.plate_no === form.plate_no);
       if (!selectedVehicle) { setMsg('Error: Selected vehicle not found.'); setSaving(false); return; }
 
-      // P0 1.1 FIX: payload shape matches backend createTicket expectations exactly
       const payload = {
         location: form.location,
         date: form.date,
@@ -161,6 +156,8 @@ export default function Violations() {
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
+  const today = new Date().toISOString().split('T')[0];
+
   const FormFields = () => (
     <div className="form-grid">
       <div className="form-group">
@@ -170,41 +167,40 @@ export default function Violations() {
           {VIOLATION_TYPES.map(t => <option key={t} value={t} />)}
         </datalist>
       </div>
-      {/* P0 1.2 FIX: status options use Title Case matching DB ('Unpaid'/'Paid'/'Contested') */}
       <div className="form-group">
         <label className="form-label">Status</label>
         <select className="form-control" name="violation_status" value={form.violation_status} onChange={handleChange}>
           {STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
-      {/* P0 1.1 FIX: name="date" (was date_of_violation) */}
       <div className="form-group">
         <label className="form-label">Date of Violation *</label>
-        <input className="form-control" type="date" name="date" value={form.date?.split('T')[0] ?? ''} onChange={handleChange} />
+        <input className="form-control" type="date" name="date"
+          value={form.date?.split('T')[0] ?? ''}
+          max={today}
+          onChange={handleChange} />
       </div>
       <div className="form-group">
-        <label className="form-label">Fine Amount (₱) *</label>
+        <label className="form-label">Fine Amount (₱)</label>
         <input className="form-control" type="number" name="fine_amount" value={form.fine_amount} onChange={handleChange} placeholder="2000" />
       </div>
       <div className="form-group full">
-        <label className="form-label">Location *</label>
+        <label className="form-label">Location</label>
         <input className="form-control" name="location" value={form.location} onChange={handleChange} placeholder="EDSA, Quezon City" />
       </div>
       <div className="form-group">
-        <label className="form-label">Apprehending Officer *</label>
+        <label className="form-label">Apprehending Officer</label>
         <input className="form-control" name="apprehending_officer" value={form.apprehending_officer} onChange={handleChange} placeholder="PO1 Juan Dela Cruz" />
       </div>
-      {/* P0 1.1 FIX: name="license_no" (was driver_id) */}
       <div className="form-group">
-        <label className="form-label">Driver *</label>
+        <label className="form-label">Driver</label>
         <select className="form-control" name="license_no" value={form.license_no} onChange={handleChange}>
           <option value="">— Select Driver —</option>
           {drivers.map(d => <option key={d.license_no} value={d.license_no}>{d.full_name} · {d.license_no}</option>)}
         </select>
       </div>
-      {/* P0 1.1 FIX: name="plate_no" (was vehicle_id) */}
       <div className="form-group">
-        <label className="form-label">Vehicle *</label>
+        <label className="form-label">Vehicle</label>
         <select className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange}>
           <option value="">— Select Vehicle —</option>
           {vehicles.map(v => <option key={v.plate_no} value={v.plate_no}>{v.plate_no} · {v.make} {v.model}</option>)}
@@ -226,7 +222,6 @@ export default function Violations() {
             <span className="search-icon">🔍</span>
             <input placeholder="Search by type, location, driver, plate..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          {/* P0 1.2 FIX: filter options use Title Case matching DB */}
           <select className="filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
             <option value="">All Statuses</option>
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -261,7 +256,6 @@ export default function Violations() {
                     <td style={{ fontWeight: 600 }}>{v.violations?.[0]?.violation_name ?? '—'}</td>
                     <td style={{ fontSize: 12 }}>{v.driver_name ?? v.license_no ?? '—'}</td>
                     <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--lto-blue)', fontSize: 12 }}>{v.plate_no ?? '—'}</td>
-                    {/* P0 1.1 FIX: use v.date (backend field, was v.date_of_violation) */}
                     <td style={{ fontSize: 12 }}>{v.date ? new Date(v.date).toLocaleDateString('en-PH') : '—'}</td>
                     <td style={{ fontSize: 12 }}>{v.location ?? '—'}</td>
                     <td style={{ fontWeight: 700 }}>₱{Number(v.violations?.[0]?.fine_amount ?? 0).toLocaleString()}</td>

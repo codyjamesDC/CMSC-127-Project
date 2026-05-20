@@ -8,13 +8,16 @@ const LICENSE_STATUSES = ['Active', 'Expired', 'Suspended', 'Revoked'];
 const SEXES = ['M', 'F'];
 
 const driverRules = {
-  license_no: { required: true },
-  fname: { required: true },
-  lname: { required: true },
-  bday: { required: true },
-  sex: { required: true },
-  contact_no: { required: true }
-}
+  license_no:  { required: true },
+  fname:       { required: true },
+  lname:       { required: true },
+  bday:        { required: true, notFuture: true,
+                 msg: 'Birthday cannot be a future date.' },
+  sex:         { required: true },
+  // Cross-field date check (runs only when both fields have a value)
+  expiry_date: { afterField: 'issued_date',
+                 msg: 'Expiration date must be after the issue date.' },
+};
 
 const emptyForm = {
   license_no: '',
@@ -39,13 +42,22 @@ const emptyForm = {
   emrg_contact_person: '',
   emrg_contact_no: '',
   license_type: 'Non-Professional',
-  license_status: 'Active', 
+  license_status: 'Active',
   issued_date: '',
   expiry_date: '',
   agency_code: '',
   conditions: [],
   license_codes: [],
   addresses: [],
+};
+
+// Mirrors how Registrations.jsx computes status — only overrides 'Active',
+// never touches 'Suspended' or 'Revoked'.
+const computeLicenseStatus = (driver) => {
+  if (driver.license_status === 'Active' && driver.expiry_date) {
+    return new Date(driver.expiry_date) < new Date() ? 'Expired' : 'Active';
+  }
+  return driver.license_status;
 };
 
 function StatusBadge({ status }) {
@@ -77,6 +89,7 @@ export default function Drivers() {
         addresses: d.addresses || [],
         conditions: d.conditions || [],
         license_codes: d.license_codes || [],
+        license_status: computeLicenseStatus(d), // auto-expire if past expiry_date
       }));
 
       setDrivers(mappedDrivers);
@@ -127,12 +140,10 @@ export default function Drivers() {
     setForm({ ...form, [field]: newArray });
   };
 
-  // 🛑 NEW FUNCTION: Handles the Renew button logic
   const handleRenew = () => {
     const today = new Date();
     today.setFullYear(today.getFullYear() + 5);
     const newExpiry = today.toISOString().split('T')[0];
-    
     setForm(f => ({
       ...f,
       expiry_date: newExpiry,
@@ -203,7 +214,10 @@ export default function Drivers() {
       </div>
       <div className="form-group">
         <label className="form-label">Date of Birth *</label>
-        <input className="form-control" type="date" name="bday" value={form.bday?.split('T')[0] ?? ''} onChange={handleChange} />
+        <input className="form-control" type="date" name="bday"
+          value={form.bday?.split('T')[0] ?? ''}
+          max={new Date().toISOString().split('T')[0]}
+          onChange={handleChange} />
       </div>
       <div className="form-group">
         <label className="form-label">Sex</label>
@@ -212,7 +226,7 @@ export default function Drivers() {
         </select>
       </div>
       <div className="form-group">
-        <label className="form-label">Contact No. *</label>
+        <label className="form-label">Contact No.</label>
         <input className="form-control" name="contact_no" value={form.contact_no} onChange={handleChange} placeholder="09171234567" />
       </div>
 
@@ -256,7 +270,6 @@ export default function Drivers() {
         </select>
       </div>
 
-      {/* 🛑 CONDITIONAL RENDERING: Only show License Status when editing an existing driver */}
       {modal === 'edit' && (
         <div className="form-group">
           <label className="form-label">License Status</label>
@@ -267,23 +280,28 @@ export default function Drivers() {
       )}
 
       <div className="form-group">
-        <label className="form-label">Issue Date *</label>
-        <input className="form-control" type="date" name="issued_date" value={form.issued_date?.split('T')[0] ?? ''} onChange={handleChange} />
+        <label className="form-label">Issue Date</label>
+        <input className="form-control" type="date" name="issued_date"
+          value={form.issued_date?.split('T')[0] ?? ''}
+          max={new Date().toISOString().split('T')[0]}
+          onChange={handleChange} />
       </div>
 
       <div className="form-group">
-        {/* 🛑 NEW RENEW BUTTON: Rendered right next to the Expiration Date label */}
         <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Expiration Date *</span>
+          <span>Expiration Date</span>
           {modal === 'edit' && (
             <button type="button" onClick={handleRenew} style={{ background: 'var(--lto-blue)', color: 'white', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}>
               RENEW 5 YRS
             </button>
           )}
         </label>
-        <input className="form-control" type="date" name="expiry_date" value={form.expiry_date?.split('T')[0] ?? ''} onChange={handleChange} />
+        <input className="form-control" type="date" name="expiry_date"
+          value={form.expiry_date?.split('T')[0] ?? ''}
+          min={form.issued_date?.split('T')[0] || undefined}
+          onChange={handleChange} />
       </div>
-      
+
       <div className="form-group">
         <label className="form-label">Agency Code</label>
         <input className="form-control" name="agency_code" value={form.agency_code} onChange={handleChange} placeholder="LTO-NCR" />

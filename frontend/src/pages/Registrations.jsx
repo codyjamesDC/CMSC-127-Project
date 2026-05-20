@@ -4,7 +4,6 @@ import Modal from '../components/Modal';
 import { registrationsApi, vehiclesApi } from '../api/client';
 import { validateForm } from '../utils/validation';
 
-// P0 1.1 FIX: emptyForm uses plate_no (not vehicle_id)
 const emptyForm = {
   registration_number: '',
   plate_no: '',
@@ -14,10 +13,11 @@ const emptyForm = {
 
 const registrationRules = {
   registration_number: { required: true },
-  plate_no: { required: true },
-  registration_date: { required: true },
-  expiration_date: { required: true }
-}
+  plate_no:            { required: true },
+  // Cross-field date check (runs only when both fields have a value)
+  expiration_date: { afterField: 'registration_date',
+                     msg: 'Expiration date must be after the registration date.' },
+};
 
 function StatusBadge({ status }) {
   return <span className={`badge badge-${status}`}>{status}</span>;
@@ -64,7 +64,6 @@ export default function Registrations() {
   const openAdd = () => { setForm(emptyForm); setModal('add'); setMsg(''); };
 
   const openEdit = (r) => {
-    // P0 1.1 FIX: use plate_no (not vehicle_id) in form state
     setForm({
       registration_number: r.registration_number ?? r.registration_no ?? '',
       plate_no: r.plate_no ?? '',
@@ -84,7 +83,6 @@ export default function Registrations() {
     }
     setSaving(true);
     try {
-      // P0 1.1 FIX: payload sends plate_no directly (backend expects plate_no, not vehicle_id)
       const payload = {
         registration_number: form.registration_number,
         plate_no: form.plate_no,
@@ -114,7 +112,6 @@ export default function Registrations() {
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
-  // Extracted outside JSX return to prevent focus loss
   const FormFields = () => (
     <div className="form-grid">
       <div className="form-group full">
@@ -123,7 +120,6 @@ export default function Registrations() {
       </div>
       <div className="form-group full">
         <label className="form-label">Vehicle *</label>
-        {/* P0 1.1 FIX: name="plate_no" (was name="vehicle_id") */}
         <select className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange}>
           <option value="">— Select Vehicle —</option>
           {vehicles.map(v => (
@@ -134,12 +130,18 @@ export default function Registrations() {
         </select>
       </div>
       <div className="form-group">
-        <label className="form-label">Registration Date *</label>
-        <input className="form-control" type="date" name="registration_date" value={form.registration_date?.split('T')[0] ?? ''} onChange={handleChange} />
+        <label className="form-label">Registration Date</label>
+        <input className="form-control" type="date" name="registration_date"
+          value={form.registration_date?.split('T')[0] ?? ''}
+          max={new Date().toISOString().split('T')[0]}
+          onChange={handleChange} />
       </div>
       <div className="form-group">
-        <label className="form-label">Expiration Date *</label>
-        <input className="form-control" type="date" name="expiration_date" value={form.expiration_date?.split('T')[0] ?? ''} onChange={handleChange} />
+        <label className="form-label">Expiration Date</label>
+        <input className="form-control" type="date" name="expiration_date"
+          value={form.expiration_date?.split('T')[0] ?? ''}
+          min={form.registration_date?.split('T')[0] || undefined}
+          onChange={handleChange} />
       </div>
     </div>
   );
