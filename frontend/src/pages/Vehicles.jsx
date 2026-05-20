@@ -1,7 +1,8 @@
 // frontend/src/pages/Vehicles.jsx
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
-import { vehiclesApi, driversApi } from '../api/client';
+// 🛑 MODIFIED: Added violationsApi and registrationsApi to check for violations and registration status
+import { vehiclesApi, driversApi, violationsApi, registrationsApi } from '../api/client';
 import { validateForm } from '../utils/validation';
 import { showConfirm } from '../utils/confirm';
 import { showToast } from '../utils/toast';
@@ -41,7 +42,7 @@ const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPE
     <div className="form-group">
       <label className="form-label">Plate Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       {/* P0 1.1 FIX: name="plate_no" (was plate_number) */}
-      <input className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange} placeholder="AAA1234" />
+      <input className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange} placeholder="AAA1234" disabled={form._isEdit} />
     </div>
     <div className="form-group">
       <label className="form-label">Vehicle Type</label>
@@ -148,7 +149,7 @@ export default function Vehicles() {
     )
   );
 
-  const openAdd = () => { setForm(emptyForm); setModal('add'); setMsg(''); };
+  const openAdd = () => { setForm({ ...emptyForm, _isEdit: false }); setModal('add'); setMsg(''); };
 
   const openEdit = (v) => {
     // P0 1.1 FIX: spread v directly — fields are already backend-named (plate_no, engine_no, etc.)
@@ -163,6 +164,7 @@ export default function Vehicles() {
       year: v.year ?? '',
       color: v.color ?? '',
       license_no: v.license_no ?? '',
+      _isEdit: true
     });
     setSelected(v);
     setModal('edit');
@@ -179,9 +181,44 @@ export default function Vehicles() {
       return;
     }
     setSaving(true);
+    
+    // 🛑 NEW: Ensure constraints on Ownership and Owner changes
+    if (modal === 'edit' && (form.license_no !== selected.license_no || form.ownership !== selected.ownership)) {
+      try {
+        // 1. Check for existing unsettled violations
+        const vioRes = await violationsApi.getAll();
+        const tickets = Array.isArray(vioRes.data) ? vioRes.data : vioRes.data?.data ?? [];
+        const hasExistingViolations = tickets.some(t => t.plate_no === selected.plate_no && t.violation_status !== 'Paid');
+        
+        if (hasExistingViolations) {
+          setMsg('Error: Cannot change ownership. Vehicle has existing or unsettled violations.');
+          setSaving(false);
+          return;
+        }
+      } catch (e) { /* ignore fetching errors and proceed */ }
+
+      try {
+        // 2. Check if vehicle is unregistered
+        const regRes = await registrationsApi.getByVehicle(selected.plate_no);
+        const registrations = Array.isArray(regRes.data) ? regRes.data : regRes.data?.data ?? [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const hasActiveReg = registrations.some(r => new Date(r.expiration_date) >= today);
+
+        if (hasActiveReg) {
+          setMsg('Error: Cannot change ownership. Vehicle must be unregistered (registration must be expired) first.');
+          setSaving(false);
+          return;
+        }
+      } catch (e) {
+        // A 404 here means no registrations exist at all, which satisfies the "unregistered" condition.
+      }
+    }
+
     try {
       // P0 1.1 FIX: payload already uses correct backend field names — no remapping needed
-      const payload = { ...form };
+      const { _isEdit, ...payload } = form; // strip UI state flags
 
       if (modal === 'add') {
         await vehiclesApi.create(payload);
@@ -200,9 +237,39 @@ export default function Vehicles() {
   };
 
   const handleDelete = async (v) => {
+    // 🛑 NEW: Check constraints before showing the deletion confirm prompt
+    try {
+      const vioRes = await violationsApi.getAll();
+      const tickets = Array.isArray(vioRes.data) ? vioRes.data : vioRes.data?.data ?? [];
+      const hasUnpaidVio = tickets.some(t => t.plate_no === v.plate_no && t.violation_status === 'Unpaid');
+
+      if (hasUnpaidVio) {
+        showToast('Delete failed: Vehicle has unpaid violations.', 'error');
+        return;
+      }
+    } catch (e) { /* ignore */ }
+
+    try {
+      const regRes = await registrationsApi.getByVehicle(v.plate_no);
+      const registrations = Array.isArray(regRes.data) ? regRes.data : regRes.data?.data ?? [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const hasActiveReg = registrations.some(r => new Date(r.expiration_date) >= today);
+
+      if (hasActiveReg) {
+        showToast('Delete failed: Vehicle currently has an active registration.', 'error');
+        return;
+      }
+    } catch (e) { /* ignore 404s if it has no registrations */ }
+
     const ok = await showConfirm(`WARNING: Deleting vehicle "${v.plate_no}" will permanently remove all of its associated REGISTRATIONS and TRAFFIC VIOLATION TICKETS.\n\nDo you want to proceed?`);
     if (!ok) return;
-    try { await vehiclesApi.delete(v.plate_no); await load(); showToast(`Vehicle ${v.plate_no} deleted.`, 'success'); }
+    
+    try { 
+      await vehiclesApi.delete(v.plate_no); 
+      await load(); 
+      showToast(`Vehicle ${v.plate_no} deleted.`, 'success'); 
+    }
     catch (e) { showToast('Delete failed: ' + (e.response?.data?.message ?? e.message), 'error'); }
   };
 
