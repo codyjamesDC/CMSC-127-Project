@@ -13,7 +13,10 @@
   --lto-gray: #e2e6ef;
   --lto-dark: #0a0f1e;
   --lto-text: #1a2540;
-  --lto-text-muted: #5a6a8a;
+  --lto-text-muted: #3d4f70;
+  --toast-bg: rgba(20,20,20,0.9);
+  --toast-success: #2ecc71;
+  --toast-error: #e74c3c;
   --lto-border: #c8d3e8;
   --sidebar-width: 260px;
 }
@@ -115,6 +118,15 @@ tbody tr:last-child td { border-bottom: none; }
 .btn-yellow { background: var(--lto-yellow); color: var(--lto-blue); font-weight: 700; }
 .btn-yellow:hover { background: var(--lto-yellow-dark); }
 .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+/* Toasts */
+.toast-container { position: fixed; top: 16px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast { background: var(--toast-bg); color: white; padding: 8px 12px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-size: 13px; }
+.toast-success { border-left: 4px solid var(--toast-success); }
+.toast-error { border-left: 4px solid var(--toast-error); }
+
+/* Focus styles */
+button:focus, input:focus, select:focus, textarea:focus { outline: 3px solid rgba(21,156,228,0.35); outline-offset: 2px; }
 
 /* MODAL */
 .modal-overlay { position: fixed; inset: 0; background: rgba(10,15,30,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease; }
