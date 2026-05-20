@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { violationsApi, driversApi, vehiclesApi } from '../api/client';
 import { validateForm } from '../utils/validation';
+import { showConfirm } from '../utils/confirm';
+import { showToast } from '../utils/toast';
 import useSortableTable from '../hooks/useSortableTable';
 
 const VIOLATION_TYPES = ['Overspeeding', 'Reckless Driving', 'Illegal Parking', 'Beating Red Light', 'No Helmet', 'No Seatbelt', 'Drunk Driving', 'Illegal Overtaking', 'Obstruction', 'Others'];
@@ -169,7 +171,9 @@ export default function Violations() {
       }
 
       await load();
-      setTimeout(() => { setModal(null); setMsg(''); }, 600);
+      setModal(null);
+      setMsg('');
+      showToast('Violation saved', 'success', 3000);
     } catch (e) {
       setMsg('Error: ' + (e.response?.data?.message ?? e.message));
     }
@@ -177,9 +181,10 @@ export default function Violations() {
   };
 
   const handleDelete = async (v) => {
-    if (!window.confirm('Delete violation record?')) return;
-    try { await violationsApi.delete(v.ticket_id); load(); }
-    catch (e) { alert('Delete failed: ' + (e.response?.data?.message ?? e.message)); }
+    const ok = await showConfirm('Delete violation record? This cannot be undone.');
+    if (!ok) return;
+    try { await violationsApi.delete(v.ticket_id); await load(); showToast('Violation deleted', 'success'); }
+    catch (e) { showToast('Delete failed: ' + (e.response?.data?.message ?? e.message), 'error'); }
   };
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -189,36 +194,36 @@ export default function Violations() {
   const FormFields = () => (
     <div className="form-grid">
       <div className="form-group">
-        <label className="form-label">Status</label>
-        <select className="form-control" name="violation_status" value={form.violation_status} onChange={handleChange}>
+        <label htmlFor="vio-status" className="form-label">Status</label>
+        <select id="vio-status" className="form-control" name="violation_status" value={form.violation_status} onChange={handleChange}>
           {STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
       <div className="form-group">
-        <label className="form-label">Date of Violation <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" type="date" name="date"
+        <label htmlFor="vio-date" className="form-label">Date of Violation <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="vio-date" className="form-control" type="date" name="date"
           value={form.date?.split('T')[0] ?? ''}
           max={today}
           onChange={handleChange} />
       </div>
       <div className="form-group full">
-        <label className="form-label">Location</label>
-        <input className="form-control" name="location" value={form.location} onChange={handleChange} placeholder="EDSA, Quezon City" />
+        <label htmlFor="vio-location" className="form-label">Location</label>
+        <input id="vio-location" className="form-control" name="location" value={form.location} onChange={handleChange} placeholder="EDSA, Quezon City" />
       </div>
       <div className="form-group">
-        <label className="form-label">Apprehending Officer <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" name="apprehending_officer" value={form.apprehending_officer} onChange={handleChange} placeholder="PO1 Juan Dela Cruz" />
+        <label htmlFor="vio-officer" className="form-label">Apprehending Officer <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="vio-officer" className="form-control" name="apprehending_officer" value={form.apprehending_officer} onChange={handleChange} placeholder="PO1 Juan Dela Cruz" />
       </div>
       <div className="form-group">
-        <label className="form-label">Driver <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <select className="form-control" name="license_no" value={form.license_no} onChange={handleChange}>
+        <label htmlFor="vio-driver" className="form-label">Driver <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <select id="vio-driver" className="form-control" name="license_no" value={form.license_no} onChange={handleChange}>
           <option value="">— Select Driver —</option>
           {drivers.map(d => <option key={d.license_no} value={d.license_no}>{d.full_name} · {d.license_no}</option>)}
         </select>
       </div>
       <div className="form-group">
-        <label className="form-label">Vehicle <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <select className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange}>
+        <label htmlFor="vio-vehicle" className="form-label">Vehicle <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <select id="vio-vehicle" className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange}>
           <option value="">— Select Vehicle —</option>
           {vehicles.map(v => <option key={v.plate_no} value={v.plate_no}>{v.plate_no} · {v.make} {v.model}</option>)}
         </select>
@@ -229,12 +234,12 @@ export default function Violations() {
         <label className="form-label">Violations <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         {form.violations.map((vio, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-            <select className="form-control" style={{ flex: 2 }} value={vio.violation_name} onChange={e => handleViolationChange(i, 'violation_name', e.target.value)}>
+            <select id={`vio-name-${i}`} className="form-control" style={{ flex: 2 }} value={vio.violation_name} onChange={e => handleViolationChange(i, 'violation_name', e.target.value)}>
               {VIOLATION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <input className="form-control" style={{ flex: 1 }} type="number" placeholder="Fine (₱)" value={vio.fine_amount} onChange={e => handleViolationChange(i, 'fine_amount', e.target.value)} />
+            <input id={`vio-fine-${i}`} className="form-control" style={{ flex: 1 }} type="number" placeholder="Fine (₱)" value={vio.fine_amount} onChange={e => handleViolationChange(i, 'fine_amount', e.target.value)} />
             {form.violations.length > 1 && (
-              <button type="button" className="btn btn-danger btn-sm" onClick={() => removeViolation(i)}>✕</button>
+              <button type="button" className="btn btn-danger btn-sm" onClick={() => removeViolation(i)} aria-label={`Remove Violation ${i+1}`}>✕</button>
             )}
           </div>
         ))}

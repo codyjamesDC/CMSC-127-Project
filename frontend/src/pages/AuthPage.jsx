@@ -32,7 +32,10 @@ export default function AuthPage({ onLogin }) {
         <div style={{
         minHeight: "100vh",
         width: "100%",
-        background: "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #1e3a8a 100%)",
+        background: "linear-gradient(135deg, rgba(30,58,138,0.45) 0%, rgba(29,78,216,0.35) 50%, rgba(30,58,138,0.45) 100%), url('https://images.unsplash.com/photo-1768962635991-0fa9543b7640?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1920')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",

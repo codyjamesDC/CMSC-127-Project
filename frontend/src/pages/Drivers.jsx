@@ -4,6 +4,8 @@ import Modal from '../components/Modal';
 import { driversApi } from '../api/client';
 import { validateForm } from '../utils/validation';
 import useSortableTable from '../hooks/useSortableTable';
+import { showConfirm } from '../utils/confirm';
+import { showToast } from '../utils/toast';
 
 const LICENSE_TYPES = ['Student Permit', 'Non-Professional', 'Professional'];
 const LICENSE_STATUSES = ['Active', 'Expired', 'Suspended', 'Revoked'];
@@ -283,21 +285,25 @@ export default function Drivers() {
         await driversApi.update(selected.license_no, payload);
       }
 
-      setMsg('Saved successfully.');
       await load();
-      setTimeout(() => { setModal(null); setMsg(''); }, 800);
+      setModal(null);
+      setMsg('');
+      showToast('Driver record saved successfully', 'success', 3500);
     } catch (e) {
       setMsg('Error: ' + (e.response?.data?.message ?? e.message));
+      showToast('Save failed: ' + (e.response?.data?.message ?? e.message), 'error', 4000);
     }
     setSaving(false);
   };
 
   const handleDelete = async (d) => {
-    if (!window.confirm(`Delete driver "${d.full_name}"? This cannot be undone.`)) return;
+    const ok = await showConfirm(`Delete driver "${d.full_name}"? This cannot be undone.`);
+    if (!ok) return;
     try {
       await driversApi.delete(d.license_no);
-      load();
-    } catch (e) { alert('Delete failed: ' + (e.response?.data?.message ?? e.message)); }
+      await load();
+      showToast(`Driver "${d.full_name}" deleted successfully.`, 'success');
+    } catch (e) { showToast('Delete failed: ' + (e.response?.data?.message ?? e.message), 'error'); }
   };
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -305,64 +311,64 @@ export default function Drivers() {
   const FormFields = () => (
     <div className="form-grid">
       <div className="form-group full">
-        <label className="form-label">License Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" name="license_no" value={form.license_no} onChange={handleChange} placeholder="N01-23-456789" disabled={modal === 'edit'} />
+        <label htmlFor="driver-license_no" className="form-label">License Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="driver-license_no" className="form-control" name="license_no" value={form.license_no} onChange={handleChange} placeholder="N01-23-456789" disabled={modal === 'edit'} />
       </div>
       <div className="form-group">
-        <label className="form-label">First Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" name="fname" value={form.fname} onChange={handleChange} placeholder="Juan" />
+        <label htmlFor="driver-fname" className="form-label">First Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="driver-fname" className="form-control" name="fname" value={form.fname} onChange={handleChange} placeholder="Juan" />
       </div>
       <div className="form-group">
-        <label className="form-label">Last Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" name="lname" value={form.lname} onChange={handleChange} placeholder="Dela Cruz" />
+        <label htmlFor="driver-lname" className="form-label">Last Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="driver-lname" className="form-control" name="lname" value={form.lname} onChange={handleChange} placeholder="Dela Cruz" />
       </div>
       <div className="form-group">
-        <label className="form-label">Middle Name</label>
-        <input className="form-control" name="mname" value={form.mname} onChange={handleChange} placeholder="Santos" />
+        <label htmlFor="driver-mname" className="form-label">Middle Name</label>
+        <input id="driver-mname" className="form-control" name="mname" value={form.mname} onChange={handleChange} placeholder="Santos" />
       </div>
       <div className="form-group">
-        <label className="form-label">Date of Birth <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" type="date" name="bday"
+        <label htmlFor="driver-bday" className="form-label">Date of Birth <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="driver-bday" className="form-control" type="date" name="bday"
           value={form.bday?.split('T')[0] ?? ''}
           max={new Date().toISOString().split('T')[0]}
           onChange={handleChange} />
       </div>
       <div className="form-group">
-        <label className="form-label">Sex <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <select className="form-control" name="sex" value={form.sex} onChange={handleChange}>
+        <label htmlFor="driver-sex" className="form-label">Sex <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <select id="driver-sex" className="form-control" name="sex" value={form.sex} onChange={handleChange}>
           {SEXES.map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
       <div className="form-group">
-        <label className="form-label">Contact No. <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" name="contact_no" value={form.contact_no} onChange={handleChange} placeholder="09171234567" />
+        <label htmlFor="driver-contact_no" className="form-label">Contact No. <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="driver-contact_no" className="form-control" name="contact_no" value={form.contact_no} onChange={handleChange} placeholder="09171234567" />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Nationality <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" name="nationality" value={form.nationality} onChange={handleChange} placeholder="Filipino" />
+        <label htmlFor="driver-nationality" className="form-label">Nationality <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="driver-nationality" className="form-control" name="nationality" value={form.nationality} onChange={handleChange} placeholder="Filipino" />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Height (cm) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" type="number" step="0.01" min="0" name="height_cm" value={form.height_cm} onChange={handleChange} placeholder="170" />
+        <label htmlFor="driver-height_cm" className="form-label">Height (cm) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="driver-height_cm" className="form-control" type="number" step="0.01" min="0" name="height_cm" value={form.height_cm} onChange={handleChange} placeholder="170" />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Weight (kg) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" type="number" step="0.01" min="0" name="weight_kg" value={form.weight_kg} onChange={handleChange} placeholder="65" />
+        <label htmlFor="driver-weight_kg" className="form-label">Weight (kg) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="driver-weight_kg" className="form-control" type="number" step="0.01" min="0" name="weight_kg" value={form.weight_kg} onChange={handleChange} placeholder="65" />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Eye Color <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <select className="form-control" name="eye_color" value={form.eye_color} onChange={handleChange}>
+        <label htmlFor="driver-eye_color" className="form-label">Eye Color <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <select id="driver-eye_color" className="form-control" name="eye_color" value={form.eye_color} onChange={handleChange}>
           {EYE_COLORS.map(color => <option key={color}>{color}</option>)}
         </select>
       </div>
 
       <div className="form-group">
-        <label className="form-label">Blood Type <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <select className="form-control" name="blood_type" value={form.blood_type} onChange={handleChange}>
+        <label htmlFor="driver-blood_type" className="form-label">Blood Type <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <select id="driver-blood_type" className="form-control" name="blood_type" value={form.blood_type} onChange={handleChange}>
           {BLOOD_TYPES.map(type => <option key={type}>{type}</option>)}
         </select>
       </div>
@@ -370,37 +376,37 @@ export default function Drivers() {
       <div className="form-group full">
       <label className="form-label">Mother's Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <div style={{ display: 'flex', gap: 8 }}>
-          <input className="form-control" style={{ flex: 1 }} name="mother_fname" value={form.mother_fname} onChange={handleChange} placeholder="Mother First" />
-          <input className="form-control" style={{ flex: 1 }} name="mother_mname" value={form.mother_mname} onChange={handleChange} placeholder="Mother Middle" />
-          <input className="form-control" style={{ flex: 1 }} name="mother_lname" value={form.mother_lname} onChange={handleChange} placeholder="Mother Last" />
+          <input id="driver-mother_fname" className="form-control" style={{ flex: 1 }} name="mother_fname" value={form.mother_fname} onChange={handleChange} placeholder="Mother First" />
+          <input id="driver-mother_mname" className="form-control" style={{ flex: 1 }} name="mother_mname" value={form.mother_mname} onChange={handleChange} placeholder="Mother Middle" />
+          <input id="driver-mother_lname" className="form-control" style={{ flex: 1 }} name="mother_lname" value={form.mother_lname} onChange={handleChange} placeholder="Mother Last" />
         </div>
       </div>
 
       <div className="form-group full">
       <label className="form-label">Father's Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <div style={{ display: 'flex', gap: 8 }}>
-          <input className="form-control" style={{ flex: 1 }} name="father_fname" value={form.father_fname} onChange={handleChange} placeholder="Father First" />
-          <input className="form-control" style={{ flex: 1 }} name="father_mname" value={form.father_mname} onChange={handleChange} placeholder="Father Middle" />
-          <input className="form-control" style={{ flex: 1 }} name="father_lname" value={form.father_lname} onChange={handleChange} placeholder="Father Last" />
+          <input id="driver-father_fname" className="form-control" style={{ flex: 1 }} name="father_fname" value={form.father_fname} onChange={handleChange} placeholder="Father First" />
+          <input id="driver-father_mname" className="form-control" style={{ flex: 1 }} name="father_mname" value={form.father_mname} onChange={handleChange} placeholder="Father Middle" />
+          <input id="driver-father_lname" className="form-control" style={{ flex: 1 }} name="father_lname" value={form.father_lname} onChange={handleChange} placeholder="Father Last" />
         </div>
       </div>
 
       <div className="form-group">
-        <label className="form-label">Emergency Contact Person <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" name="emrg_contact_person" value={form.emrg_contact_person} onChange={handleChange} placeholder="Full name" />
+        <label htmlFor="driver-emrg_contact_person" className="form-label">Emergency Contact Person <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="driver-emrg_contact_person" className="form-control" name="emrg_contact_person" value={form.emrg_contact_person} onChange={handleChange} placeholder="Full name" />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Emergency Contact No. <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" name="emrg_contact_no" value={form.emrg_contact_no} onChange={handleChange} placeholder="09171234567" />
+        <label htmlFor="driver-emrg_contact_no" className="form-label">Emergency Contact No. <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="driver-emrg_contact_no" className="form-control" name="emrg_contact_no" value={form.emrg_contact_no} onChange={handleChange} placeholder="09171234567" />
       </div>
 
       <div className="form-group full" style={{ background: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 8 }}>
         <label className="form-label">Addresses</label>
         {form.addresses.map((addr, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input className="form-control" value={addr} onChange={e => handleArrayChange('addresses', i, e.target.value)} placeholder="Brgy., City, Province" />
-            <button type="button" className="btn btn-danger btn-sm" onClick={() => removeArrayItem('addresses', i)}>✕</button>
+            <input id={`driver-address-${i}`} className="form-control" value={addr} onChange={e => handleArrayChange('addresses', i, e.target.value)} placeholder="Brgy., City, Province" />
+            <button type="button" className="btn btn-danger btn-sm" onClick={() => removeArrayItem('addresses', i)} aria-label={`Remove Address ${i+1}`}>✕</button>
           </div>
         ))}
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('addresses')}>+ Add Address</button>
@@ -410,8 +416,8 @@ export default function Drivers() {
         <label className="form-label">Conditions</label>
         {form.conditions.map((cond, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input className="form-control" value={cond} onChange={e => handleArrayChange('conditions', i, e.target.value)} placeholder="e.g. Wear eyeglasses" />
-            <button type="button" className="btn btn-danger btn-sm" onClick={() => removeArrayItem('conditions', i)}>✕</button>
+            <input id={`driver-condition-${i}`} className="form-control" value={cond} onChange={e => handleArrayChange('conditions', i, e.target.value)} placeholder="e.g. Wear eyeglasses" />
+            <button type="button" className="btn btn-danger btn-sm" onClick={() => removeArrayItem('conditions', i)} aria-label={`Remove Condition ${i+1}`}>✕</button>
           </div>
         ))}
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('conditions')}>+ Add Condition</button>
@@ -421,8 +427,8 @@ export default function Drivers() {
         <label className="form-label">License Codes</label>
         {form.license_codes.map((code, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input className="form-control" value={code} onChange={e => handleArrayChange('license_codes', i, e.target.value)} placeholder="e.g. A, B" />
-            <button type="button" className="btn btn-danger btn-sm" onClick={() => removeArrayItem('license_codes', i)}>✕</button>
+            <input id={`driver-code-${i}`} className="form-control" value={code} onChange={e => handleArrayChange('license_codes', i, e.target.value)} placeholder="e.g. A, B" />
+            <button type="button" className="btn btn-danger btn-sm" onClick={() => removeArrayItem('license_codes', i)} aria-label={`Remove License Code ${i+1}`}>✕</button>
           </div>
         ))}
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('license_codes')}>+ Add Code</button>
@@ -584,12 +590,25 @@ export default function Drivers() {
             {[
               ['Full Name', selected.full_name],
               ['License No.', selected.license_no],
+              ['Middle Name', selected.mname || '—'],
               ['Date of Birth', selected.bday ? new Date(selected.bday).toLocaleDateString('en-PH') : '—'],
               ['Sex', selected.sex],
+              ['Nationality', selected.nationality],
+              ['Height (cm)', selected.height_cm],
+              ['Weight (kg)', selected.weight_kg],
+              ['Eye Color', selected.eye_color],
+              ['Blood Type', selected.blood_type],
+              ['Contact No.', selected.contact_no],
+              ['Organ Donor', selected.organ_donor ? 'Yes' : 'No'],
+              ['Mother Name', [selected.mother_fname, selected.mother_mname, selected.mother_lname].filter(Boolean).join(' ')],
+              ['Father Name', [selected.father_fname, selected.father_mname, selected.father_lname].filter(Boolean).join(' ')],
+              ['Emergency Contact Person', selected.emrg_contact_person],
+              ['Emergency Contact No.', selected.emrg_contact_no],
               ['License Type', selected.license_type],
               ['License Status', selected.license_status],
               ['Issue Date', selected.issued_date ? new Date(selected.issued_date).toLocaleDateString('en-PH') : '—'],
               ['Expiration Date', selected.expiry_date ? new Date(selected.expiry_date).toLocaleDateString('en-PH') : '—'],
+              ['Agency Code', selected.agency_code],
               ['Conditions', selected.conditions?.length ? selected.conditions.join(', ') : 'None'],
               ['License Codes', selected.license_codes?.length ? selected.license_codes.join(', ') : 'None'],
               ['Addresses', selected.addresses?.length ? selected.addresses.join(' | ') : '—'],

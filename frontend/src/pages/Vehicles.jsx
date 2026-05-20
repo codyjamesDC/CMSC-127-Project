@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { vehiclesApi, driversApi } from '../api/client';
 import { validateForm } from '../utils/validation';
+import { showConfirm } from '../utils/confirm';
+import { showToast } from '../utils/toast';
 import useSortableTable from '../hooks/useSortableTable';
 
 const VEHICLE_TYPES = ['Motorcycle', 'Sedan', 'Hatchback', 'SUV', 'Van', 'Truck', 'Bus'];
@@ -188,7 +190,9 @@ export default function Vehicles() {
       }
 
       await load();
-      setTimeout(() => { setModal(null); setMsg(''); }, 600);
+      setModal(null);
+      setMsg('');
+      showToast('Vehicle saved successfully', 'success', 3000);
     } catch (e) {
       setMsg('Error: ' + (e.response?.data?.message ?? e.message));
     }
@@ -196,9 +200,10 @@ export default function Vehicles() {
   };
 
   const handleDelete = async (v) => {
-    if (!window.confirm(`WARNING: Deleting vehicle "${v.plate_no}" will permanently remove all of its associated REGISTRATIONS and TRAFFIC VIOLATION TICKETS.\n\nDo you want to proceed?`)) return;
-    try { await vehiclesApi.delete(v.plate_no); load(); }
-    catch (e) { alert('Delete failed: ' + (e.response?.data?.message ?? e.message)); }
+    const ok = await showConfirm(`WARNING: Deleting vehicle "${v.plate_no}" will permanently remove all of its associated REGISTRATIONS and TRAFFIC VIOLATION TICKETS.\n\nDo you want to proceed?`);
+    if (!ok) return;
+    try { await vehiclesApi.delete(v.plate_no); await load(); showToast(`Vehicle ${v.plate_no} deleted.`, 'success'); }
+    catch (e) { showToast('Delete failed: ' + (e.response?.data?.message ?? e.message), 'error'); }
   };
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
