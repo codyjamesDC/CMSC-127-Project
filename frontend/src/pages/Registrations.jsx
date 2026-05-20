@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { registrationsApi, vehiclesApi } from '../api/client';
 import { validateForm } from '../utils/validation';
+import useSortableTable from '../hooks/useSortableTable';
 
 const emptyForm = {
   registration_number: '',
@@ -48,9 +49,19 @@ export default function Registrations() {
         registrationsApi.getAll({ registration_status: filterStatus }),
         vehiclesApi.getAll(),
       ]);
-      setRegistrations(Array.isArray(rRes.data) ? rRes.data : rRes.data?.data ?? []);
+      
+      const rawData = Array.isArray(rRes.data) ? rRes.data : rRes.data?.data ?? [];
+      
+      setRegistrations(rawData.map(r => ({
+        ...r, 
+        computed_status: computeStatus(r.expiration_date),
+        display_reg: r.registration_number ?? r.registration_no
+      })));
+
       setVehicles(Array.isArray(vRes.data) ? vRes.data : vRes.data?.data ?? []);
-    } catch { setError('Failed to load registrations.'); }
+    } catch { 
+      setError('Failed to load registrations.'); 
+    }
     setLoading(false);
   };
 
@@ -104,6 +115,16 @@ export default function Registrations() {
     setSaving(false);
   };
 
+  const handleRenew = () => {
+    const today = new Date();
+    today.setFullYear(today.getFullYear() + 5);
+    const newExpiry = today.toISOString().split('T')[0];
+    setForm(f => ({
+      ...f,
+      expiration_date: newExpiry
+    }));
+  };
+
   const handleDelete = async (r) => {
     if (!window.confirm(`Delete registration "${r.registration_number ?? r.registration_no}"?`)) return;
     try { await registrationsApi.delete(r.registration_no ?? r.registration_number); load(); }
@@ -129,21 +150,40 @@ export default function Registrations() {
           ))}
         </select>
       </div>
-      <div className="form-group">
+<div className="form-group">
         <label className="form-label">Registration Date</label>
         <input className="form-control" type="date" name="registration_date"
           value={form.registration_date?.split('T')[0] ?? ''}
           max={new Date().toISOString().split('T')[0]}
           onChange={handleChange} />
       </div>
+
       <div className="form-group">
-        <label className="form-label">Expiration Date</label>
+        {/* 🛑 NEW: Renew Button inside the label */}
+        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Expiration Date</span>
+          {modal === 'edit' && (
+            <button type="button" onClick={handleRenew} style={{ background: 'var(--lto-blue)', color: 'white', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}>
+              RENEW 5 YRS
+            </button>
+          )}
+        </label>
         <input className="form-control" type="date" name="expiration_date"
           value={form.expiration_date?.split('T')[0] ?? ''}
           min={form.registration_date?.split('T')[0] || undefined}
           onChange={handleChange} />
       </div>
     </div>
+  );
+
+  
+
+  const { sortedItems, requestSort, resetSort, sortConfig, getSortIcon } = useSortableTable(filtered);
+
+  const SortableHeader = ({ label, sortKey }) => (
+    <th onClick={() => requestSort(sortKey)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}>
+      {label}{getSortIcon(sortKey)}
+    </th>
   );
 
   return (
@@ -164,6 +204,8 @@ export default function Registrations() {
             <option value="active">active</option>
             <option value="expired">expired</option>
           </select>
+          {/* 🛑 NEW: Clear Sort Button */}
+          {sortConfig.key && <button className="btn btn-secondary btn-sm" onClick={resetSort} style={{ color: 'var(--lto-red)' }}>✕ Clear Sort</button>}
           <button className="btn btn-secondary btn-sm" onClick={load}>↺ Refresh</button>
         </div>
 
@@ -177,18 +219,29 @@ export default function Registrations() {
           <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
-                <tr><th>#</th><th>Reg. Number</th><th>Plate No.</th><th>Vehicle Type</th><th>Reg. Date</th><th>Expiration</th><th>Status</th><th>Actions</th></tr>
+                <tr>
+                  <th>#</th>
+                  {/* 🛑 NEW: Clickable Headers */}
+                  <SortableHeader label="Reg. Number" sortKey="display_reg"/>
+                  <SortableHeader label="Plate No." sortKey="plate_no"/>
+                  <SortableHeader label="Vehicle Type" sortKey="vehicle_type"/>
+                  <SortableHeader label="Reg. Date" sortKey="registration_date"/>
+                  <SortableHeader label="Expiration" sortKey="expiration_date"/>
+                  <SortableHeader label="Status" sortKey="computed_status"/>
+                  <th>Actions</th>
+                </tr>
               </thead>
               <tbody>
-                {filtered.map((r, i) => (
-                  <tr key={r.registration_no ?? r.registration_number ?? i}>
+                {/* 🛑 NEW: Use sortedItems */}
+                {sortedItems.map((r, i) => (
+                  <tr key={r.display_reg ?? i}>
                     <td style={{ color: 'var(--lto-text-muted)', fontWeight: 600 }}>{i + 1}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700 }}>{r.registration_number ?? r.registration_no}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700 }}>{r.display_reg}</td>
                     <td style={{ fontWeight: 600, color: 'var(--lto-blue)' }}>{r.plate_no ?? '—'}</td>
                     <td>{r.vehicle_type ?? '—'}</td>
                     <td style={{ fontSize: 12 }}>{r.registration_date ? new Date(r.registration_date).toLocaleDateString('en-PH') : '—'}</td>
                     <td style={{ fontSize: 12 }}>{r.expiration_date ? new Date(r.expiration_date).toLocaleDateString('en-PH') : '—'}</td>
-                    <td><StatusBadge status={computeStatus(r.expiration_date)} /></td>
+                    <td><StatusBadge status={r.computed_status} /></td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn btn-primary btn-sm" onClick={() => openEdit(r)}>Edit</button>

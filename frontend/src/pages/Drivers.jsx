@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { driversApi } from '../api/client';
 import { validateForm } from '../utils/validation';
+import useSortableTable from '../hooks/useSortableTable';
 
 const LICENSE_TYPES = ['Student Permit', 'Non-Professional', 'Professional'];
 const LICENSE_STATUSES = ['Active', 'Expired', 'Suspended', 'Revoked'];
@@ -368,6 +369,14 @@ export default function Drivers() {
       </div>
     </div>
   );
+  
+  const { sortedItems, requestSort, resetSort, sortConfig, getSortIcon } = useSortableTable(filtered);
+
+  const SortableHeader = ({ label, sortKey }) => (
+    <th onClick={() => requestSort(sortKey)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}>
+      {label}{getSortIcon(sortKey)}
+    </th>
+  );
 
   return (
     <div className="page-content fade-in">
@@ -391,6 +400,8 @@ export default function Drivers() {
             <option value="">All Statuses</option>
             {LICENSE_STATUSES.map(s => <option key={s}>{s}</option>)}
           </select>
+          {/* 🛑 NEW: Clear Sort Button */}
+          {sortConfig.key && <button className="btn btn-secondary btn-sm" onClick={resetSort} style={{ color: 'var(--lto-red)' }}>✕ Clear Sort</button>}
           <button className="btn btn-secondary btn-sm" onClick={load}>↺ Refresh</button>
         </div>
 
@@ -405,11 +416,20 @@ export default function Drivers() {
             <table>
               <thead>
                 <tr>
-                  <th>#</th><th>Full Name</th><th>License No.</th><th>Type</th><th>Status</th><th>Addresses</th><th>Expiration</th><th>Actions</th>
+                  <th>#</th>
+                  {/* 🛑 NEW: Clickable Headers */}
+                  <SortableHeader label="Full Name" sortKey="full_name"/>
+                  <SortableHeader label="License No." sortKey="license_no"/>
+                  <SortableHeader label="Type" sortKey="license_type"/>
+                  <SortableHeader label="Status" sortKey="license_status"/>
+                  <th>Addresses</th>
+                  <SortableHeader label="Expiration" sortKey="expiry_date"/>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((d, i) => (
+                {/* 🛑 NEW: Use sortedItems */}
+                {sortedItems.map((d, i) => (
                   <tr key={d.license_no ?? i}>
                     <td style={{ color: 'var(--lto-text-muted)', fontWeight: 600 }}>{i + 1}</td>
                     <td style={{ fontWeight: 600 }}>{d.full_name}</td>
