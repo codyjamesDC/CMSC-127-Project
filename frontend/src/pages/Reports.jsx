@@ -11,16 +11,26 @@ function ReportTable({ data, loading, error }) {
   if (!data) return null;
   if (data.length === 0) return <div className="empty-state"><div className="empty-state-icon">📊</div><p>No results found.</p></div>;
 
+  // 🛑 NEW: The ReportTable inherits sorting automatically!
+  const { sortedItems, requestSort, getSortIcon } = useSortableTable(data);
   const cols = Object.keys(data[0]);
+
   return (
     <div style={{ overflowX: 'auto', marginTop: 16 }}>
       <div style={{ fontSize: 12, color: 'var(--lto-text-muted)', marginBottom: 8 }}>{data.length} record{data.length !== 1 ? 's' : ''} found</div>
       <table>
         <thead>
-          <tr>{cols.map(c => <th key={c}>{c.replace(/_/g, ' ')}</th>)}</tr>
+          <tr>
+            {cols.map(c => (
+              <th key={c} onClick={() => requestSort(c)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}>
+                {c.replace(/_/g, ' ')}{getSortIcon(c)}
+              </th>
+            ))}
+          </tr>
         </thead>
         <tbody>
-          {data.map((row, i) => (
+          {/* 🛑 NEW: Map over sortedItems */}
+          {sortedItems.map((row, i) => (
             <tr key={i}>
               {cols.map(c => (
                 <td key={c}>

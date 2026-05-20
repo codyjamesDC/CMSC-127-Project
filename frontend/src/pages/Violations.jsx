@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { violationsApi, driversApi, vehiclesApi } from '../api/client';
 import { validateForm } from '../utils/validation';
+import useSortableTable from '../hooks/useSortableTable';
 
 const VIOLATION_TYPES = ['Overspeeding', 'Reckless Driving', 'Illegal Parking', 'Beating Red Light', 'No Helmet', 'No Seatbelt', 'Drunk Driving', 'Illegal Overtaking', 'Obstruction', 'Others'];
 const STATUSES = ['Unpaid', 'Paid', 'Contested'];
@@ -209,6 +210,15 @@ export default function Violations() {
     </div>
   );
 
+  const { sortedItems, requestSort, resetSort, sortConfig, getSortIcon } = useSortableTable(filtered);
+
+  // Helper for rendering clickable table headers
+  const SortableHeader = ({ label, sortKey }) => (
+    <th onClick={() => requestSort(sortKey)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}>
+      {label}{getSortIcon(sortKey)}
+    </th>
+  );
+
   return (
     <div className="page-content fade-in">
       <div className="table-card">
@@ -226,6 +236,8 @@ export default function Violations() {
             <option value="">All Statuses</option>
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+          {/* 🛑 NEW: Clear Sort Button */}
+          {sortConfig.key && <button className="btn btn-secondary btn-sm" onClick={resetSort} style={{ color: 'var(--lto-red)' }}>✕ Clear Sort</button>}
           <button className="btn btn-secondary btn-sm" onClick={load}>↺ Refresh</button>
         </div>
 
@@ -240,12 +252,22 @@ export default function Violations() {
             <table>
               <thead>
                 <tr>
-                  <th>#</th><th>Ticket ID</th><th>Violation Type</th><th>Driver</th>
-                  <th>Plate No.</th><th>Date</th><th>Location</th><th>Fine (₱)</th><th>Status</th><th>Actions</th>
+                  <th>#</th>
+                  {/* 🛑 NEW: Clickable Headers */}
+                  <SortableHeader label="Ticket ID" sortKey="ticket_id"/>
+                  <SortableHeader label="Violation Type" sortKey="violation_type"/>
+                  <SortableHeader label="Driver" sortKey="driver_name"/>
+                  <SortableHeader label="Plate No." sortKey="plate_no"/>
+                  <SortableHeader label="Date" sortKey="date"/>
+                  <SortableHeader label="Location" sortKey="location"/>
+                  <SortableHeader label="Fine (₱)" sortKey="fine_amount"/>
+                  <SortableHeader label="Status" sortKey="violation_status"/>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((v, i) => (
+                {/* 🛑 NEW: Map over sortedItems instead of filtered */}
+                {sortedItems.map((v, i) => (
                   <tr key={v.ticket_id ?? i}>
                     <td style={{ color: 'var(--lto-text-muted)', fontWeight: 600 }}>{i + 1}</td>
                     <td>

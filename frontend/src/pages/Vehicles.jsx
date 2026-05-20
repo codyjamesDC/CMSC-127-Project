@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { vehiclesApi, driversApi } from '../api/client';
 import { validateForm } from '../utils/validation';
+import useSortableTable from '../hooks/useSortableTable';
 
 const VEHICLE_TYPES = ['Motorcycle', 'Sedan', 'Hatchback', 'SUV', 'Van', 'Truck', 'Bus'];
 const OWNERSHIP_TYPES = ['Private', 'For Hire'];
@@ -202,6 +203,14 @@ export default function Vehicles() {
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
+  const { sortedItems, requestSort, resetSort, sortConfig, getSortIcon } = useSortableTable(filtered);
+
+  const SortableHeader = ({ label, sortKey }) => (
+    <th onClick={() => requestSort(sortKey)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}>
+      {label}{getSortIcon(sortKey)}
+    </th>
+  );
+
   return (
     <div className="page-content fade-in">
       <div className="table-card">
@@ -223,6 +232,8 @@ export default function Vehicles() {
             <option value="">All Ownerships</option>
             {OWNERSHIP_TYPES.map(o => <option key={o}>{o}</option>)}
           </select>
+          {/* 🛑 NEW: Clear Sort Button */}
+          {sortConfig.key && <button className="btn btn-secondary btn-sm" onClick={resetSort} style={{ color: 'var(--lto-red)' }}>✕ Clear Sort</button>}
           <button className="btn btn-secondary btn-sm" onClick={load}>↺ Refresh</button>
         </div>
 
@@ -236,13 +247,23 @@ export default function Vehicles() {
           <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
-                <tr><th>#</th><th>Plate No.</th><th>Type</th><th>Make / Model</th><th>Year</th><th>Color</th><th>Owner</th><th>Actions</th></tr>
+                <tr>
+                  <th>#</th>
+                  {/* 🛑 NEW: Clickable Headers */}
+                  <SortableHeader label="Plate No." sortKey="plate_no"/>
+                  <SortableHeader label="Type" sortKey="vehicle_type"/>
+                  <SortableHeader label="Make / Model" sortKey="make"/>
+                  <SortableHeader label="Year" sortKey="year"/>
+                  <SortableHeader label="Color" sortKey="color"/>
+                  <SortableHeader label="Owner" sortKey="owner_name"/>
+                  <th>Actions</th>
+                </tr>
               </thead>
               <tbody>
-                {filtered.map((v, i) => (
+                {/* 🛑 NEW: Use sortedItems */}
+                {sortedItems.map((v, i) => (
                   <tr key={v.plate_no ?? i}>
                     <td style={{ color: 'var(--lto-text-muted)', fontWeight: 600 }}>{i + 1}</td>
-                    {/* P0 1.1 FIX: use v.plate_no (backend field, was v.plate_number) */}
                     <td><span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--lto-blue)', fontSize: 13 }}>{v.plate_no}</span></td>
                     <td><span style={{ fontSize: 12, background: 'rgba(0,48,135,0.08)', color: 'var(--lto-blue)', padding: '2px 8px', borderRadius: 4 }}>{v.vehicle_type}</span></td>
                     <td style={{ fontWeight: 500 }}>{v.make} {v.model}</td>
