@@ -72,11 +72,21 @@ export const createVehicle = async (req, res) => {
       registrations
     } = req.body;
 
-    // 🛑 NEW VALIDATION: Check for duplicate Plate Number
+    // NEW VALIDATION: Check for duplicate Plate Number
     const [existing] = await conn.query(vehicleQueries.selectByPlate, [plate_no]);
     if (existing.length > 0) {
       await conn.rollback();
       return res.status(400).json({ success: false, message: 'Vehicle with this plate number already exists.' });
+    }
+
+    // NEW VALIDATION: Check for duplicate Engine or Chassis
+    const [existingEngineChassis] = await conn.query(
+      `SELECT * FROM vehicle WHERE engine_no = ? OR chassis_no = ?`,
+      [engine_no, chassis_no]
+    );
+    if (existingEngineChassis.length > 0) {
+      await conn.rollback();
+      return res.status(400).json({ success: false, message: 'A vehicle with this engine or chassis number already exists.' });
     }
 
     const vehicleValues = [
@@ -102,11 +112,6 @@ export const createVehicle = async (req, res) => {
   } catch (error) {
     await conn.rollback(); 
     console.error('Error creating vehicle:', error);
-    
-    // Fallback for engine/chassis duplicates
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ success: false, message: 'Engine or Chassis number already exists' });
-    }
     if (error.code === 'ER_NO_REFERENCED_ROW_2') {
       return res.status(400).json({ success: false, message: 'The provided driver license_no does not exist' });
     }
@@ -119,23 +124,19 @@ export const createVehicle = async (req, res) => {
 // ==========================================
 // UPDATE: Modify an existing vehicle
 // ==========================================
-// ==========================================
-// UPDATE: Modify an existing vehicle
-// ==========================================
 export const updateVehicle = async (req, res) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const { plate_no } = req.params; // The OLD plate number from the URL URL
+    const { plate_no } = req.params; // The OLD plate number from the URL
     
-    // Destructure EXACTLY what the frontend form sends (plate_no, not plate_number)
     const { 
-      plate_no: new_plate_no, // Rename it locally so it doesn't clash with req.params
+      plate_no: new_plate_no, 
       ownership, vehicle_type, color, make, model, year, license_no,
       registrations, engine_no, chassis_no 
     } = req.body;
 
-    //Prevent Changing Primary Key on Update
+    // Prevent Changing Primary Key on Update
     if (new_plate_no && new_plate_no !== plate_no) {
       await conn.rollback();
       return res.status(400).json({ 
@@ -144,8 +145,16 @@ export const updateVehicle = async (req, res) => {
       });
     }
 
-    // 🛑 FIX 2: This array MUST perfectly match the 10 placeholders in vehicleQueries.update
-    // Expected order: engine_no, chassis_no, ownership, vehicle_type, color, make, model, year, license_no, WHERE plate_no
+    // 🛑 NEW VALIDATION: Check for duplicate Engine or Chassis excluding the current vehicle
+    const [existingEngineChassis] = await conn.query(
+      `SELECT * FROM vehicle WHERE (engine_no = ? OR chassis_no = ?) AND plate_no != ?`,
+      [engine_no, chassis_no, plate_no]
+    );
+    if (existingEngineChassis.length > 0) {
+      await conn.rollback();
+      return res.status(400).json({ success: false, message: 'Another vehicle is already using this engine or chassis number.' });
+    }
+
     const vehicleValues = [
       engine_no, chassis_no, ownership, vehicle_type, color, make, model, year, license_no,
       plate_no // The OLD plate number for the WHERE clause
@@ -193,7 +202,14 @@ export const deleteVehicle = async (req, res) => {
     // 1. Delete associated registrations first to avoid foreign key constraints
     await conn.query(registrationQueries.deleteAllForVehicle, [plate_no]);
 
-    // 2. Delete the vehicle
+    // 2. Delete associated tickets and their violations
+    const [tickets] = await conn.query('SELECT ticket_id FROM violation_ticket WHERE plate_no = ?', [plate_no]);
+    for(const t of tickets) {
+      await conn.query('DELETE FROM violation WHERE ticket_id = ?', [t.ticket_id]);
+    }
+    await conn.query('DELETE FROM violation_ticket WHERE plate_no = ?', [plate_no]);
+
+    // 3. Delete the vehicle
     const [result] = await conn.query(vehicleQueries.delete, [plate_no]);
 
     if (result.affectedRows === 0) {
@@ -206,13 +222,6 @@ export const deleteVehicle = async (req, res) => {
   } catch (error) {
     await conn.rollback();
     console.error('Error deleting vehicle:', error);
-    // If the vehicle is tied to violation tickets
-    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-      return res.status(409).json({ 
-        success: false, 
-        message: 'Cannot delete this vehicle because it has associated violation tickets.' 
-      });
-    }
     res.status(500).json({ success: false, message: 'Server Error', error: error.message });
   } finally {
     conn.release();
