@@ -43,6 +43,7 @@ export default function Registrations() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [errors, setErrors] = useState({});
 
   const load = async () => {
     setLoading(true);
@@ -89,11 +90,16 @@ export default function Registrations() {
   };
 
   const handleSave = async () => {
-    const errors = validateForm(form, registrationRules);
-    if (Object.keys(errors).length > 0) {
-      setMsg(`Error: ${Object.values(errors)[0]}`);
+    const validationErrors = validateForm(form, registrationRules);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setMsg(`Error: ${Object.values(validationErrors)[0]}`);
+      const firstField = Object.keys(validationErrors)[0];
+      const el = document.getElementById(`reg-${firstField}`) || document.getElementById(firstField);
+      if (el && typeof el.focus === 'function') el.focus();
       return;
     }
+    setErrors({});
     setSaving(true);
     try {
       const payload = {
@@ -112,6 +118,7 @@ export default function Registrations() {
       await load();
       setModal(null);
       setMsg('');
+      setErrors({});
       showToast('Registration saved', 'success', 3000);
     } catch (e) {
       setMsg('Error: ' + (e.response?.data?.message ?? e.message));
@@ -143,6 +150,7 @@ export default function Registrations() {
       <div className="form-group full">
         <label htmlFor="reg-registration_number" className="form-label">Registration Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="reg-registration_number" className="form-control" name="registration_number" value={form.registration_number} onChange={handleChange} placeholder="REG-2025-00001" />
+        {errors.registration_number && <div className="field-error">{errors.registration_number}</div>}
       </div>
       <div className="form-group full">
         <label htmlFor="reg-plate_no" className="form-label">Vehicle <span style={{ color: 'var(--lto-red)' }}>*</span></label>
@@ -154,6 +162,7 @@ export default function Registrations() {
             </option>
           ))}
         </select>
+        {errors.plate_no && <div className="field-error">{errors.plate_no}</div>}
       </div>
       <div className="form-group">
         <label htmlFor="reg-registration_date" className="form-label">Registration Date</label>
@@ -161,6 +170,7 @@ export default function Registrations() {
           value={form.registration_date?.split('T')[0] ?? ''}
           max={new Date().toISOString().split('T')[0]}
           onChange={handleChange} />
+        {errors.registration_date && <div className="field-error">{errors.registration_date}</div>}
       </div>
 
       <div className="form-group">
@@ -177,6 +187,7 @@ export default function Registrations() {
           value={form.expiration_date?.split('T')[0] ?? ''}
           min={form.registration_date?.split('T')[0] || undefined}
           onChange={handleChange} />
+        {errors.expiration_date && <div className="field-error">{errors.expiration_date}</div>}
       </div>
     </div>
   );
