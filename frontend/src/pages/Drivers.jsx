@@ -1,3 +1,4 @@
+// src/pages/Drivers.jsx
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { driversApi } from '../api/client';
@@ -68,7 +69,6 @@ const emptyForm = {
   addresses: [],
 };
 
-// MODIFIED: Moved to top-level and enhanced to handle timezone shifting from DB strings
 const formatLocalYYYYMMDD = (dateVal) => {
   if (!dateVal) return '';
   const d = dateVal instanceof Date ? dateVal : new Date(dateVal);
@@ -112,7 +112,6 @@ export default function Drivers() {
       const rawData = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
 
       const mappedDrivers = rawData.map(d => {
-        // MODIFIED: Applied formatLocalYYYYMMDD to prevent the 1-day subtraction bug
         const mappedD = {
           ...d,
           bday: formatLocalYYYYMMDD(d.bday),
@@ -135,6 +134,31 @@ export default function Drivers() {
   };
 
   useEffect(() => { load(); }, [filterType, filterStatus]);
+
+  // 🛑 NEW: Added effect to auto-calculate Expiration Date on new driver creation
+  useEffect(() => {
+    if (modal === 'add' && form.bday && form.issued_date) {
+      const [bYear, bMonth, bDay] = form.bday.split('T')[0].split('-').map(Number);
+      const [iYear, iMonth, iDay] = form.issued_date.split('T')[0].split('-').map(Number);
+
+      const thisYearsBday = new Date(iYear, bMonth - 1, bDay);
+      const issueDateObj = new Date(iYear, iMonth - 1, iDay);
+
+      // Same logic as renewal: if issued strictly before or on birthday this year, add 4 years. If after, add 5 years.
+      const expireYear = issueDateObj <= thisYearsBday ? iYear + 4 : iYear + 5;
+      const newExpiryDate = new Date(expireYear, bMonth - 1, bDay);
+      
+      const calcExpiryStr = formatLocalYYYYMMDD(newExpiryDate);
+
+      // Only update if the calculated string is different to prevent infinite loops
+      setForm(f => {
+        if (f.expiry_date !== calcExpiryStr) {
+          return { ...f, expiry_date: calcExpiryStr };
+        }
+        return f;
+      });
+    }
+  }, [form.bday, form.issued_date, modal]);
 
   const filtered = drivers.filter(d => {
     const matchesSearch = !search.trim() || [
@@ -446,7 +470,9 @@ export default function Drivers() {
         <input className="form-control" type="date" name="expiry_date"
           value={form.expiry_date?.split('T')[0] ?? ''}
           min={form.issued_date?.split('T')[0] || undefined}
-          onChange={handleChange} />
+          onChange={handleChange}
+          disabled={modal === 'add'} /* 🛑 NEW: Disabled during 'add' mode to force auto-calculation */
+        />
       </div>
 
       <div className="form-group">
@@ -455,7 +481,7 @@ export default function Drivers() {
       </div>
     </div>
   );
-  
+
   const { sortedItems, requestSort, resetSort, sortConfig, getSortIcon } = useSortableTable(filtered);
 
   const SortableHeader = ({ label, sortKey }) => (
@@ -486,7 +512,6 @@ export default function Drivers() {
             <option value="">All Statuses</option>
             {LICENSE_STATUSES.map(s => <option key={s}>{s}</option>)}
           </select>
-          {/* 🛑 NEW: Clear Sort Button */}
           {sortConfig.key && <button className="btn btn-secondary btn-sm" onClick={resetSort} style={{ color: 'var(--lto-red)' }}>✕ Clear Sort</button>}
           <button className="btn btn-secondary btn-sm" onClick={load}>↺ Refresh</button>
         </div>
@@ -503,7 +528,6 @@ export default function Drivers() {
               <thead>
                 <tr>
                   <th>#</th>
-                  {/* 🛑 NEW: Clickable Headers */}
                   <SortableHeader label="Full Name" sortKey="full_name"/>
                   <SortableHeader label="License No." sortKey="license_no"/>
                   <SortableHeader label="Type" sortKey="license_type"/>
@@ -514,7 +538,6 @@ export default function Drivers() {
                 </tr>
               </thead>
               <tbody>
-                {/* 🛑 NEW: Use sortedItems */}
                 {sortedItems.map((d, i) => (
                   <tr key={d.license_no ?? i}>
                     <td style={{ color: 'var(--lto-text-muted)', fontWeight: 600 }}>{i + 1}</td>
