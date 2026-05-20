@@ -3,36 +3,36 @@
 -- DRIVER
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `driver` (
-    license_no              VARCHAR(15)     NOT NULL,
-    fname                   VARCHAR(20)     NOT NULL,
-    lname                   VARCHAR(20)     NOT NULL,
-    mname                   VARCHAR(20),
-
-    bday                    DATE            NOT NULL,
-    sex                     CHAR(1)         NOT NULL,
-
-    nationality             VARCHAR(30)     NOT NULL,
-    height_cm               DECIMAL(5,2)    NOT NULL,
-    weight_kg               DECIMAL(5,2)    NOT NULL,
-    eye_color               VARCHAR(15)     NOT NULL,
-    blood_type              VARCHAR(3)      NOT NULL,
-    contact_no              VARCHAR(15)     NOT NULL,
-    organ_donor             TINYINT(1)      NOT NULL DEFAULT 0,
-    mother_fname            VARCHAR(20)     NOT NULL,
-    mother_lname            VARCHAR(20)     NOT NULL,
-    mother_mname            VARCHAR(20),
-    father_fname            VARCHAR(20)     NOT NULL,
-    father_lname            VARCHAR(20)     NOT NULL,
-    father_mname            VARCHAR(20),
-    emrg_contact_person     VARCHAR(60)     NOT NULL,
-    emrg_contact_no         VARCHAR(15)     NOT NULL,
-    license_type            VARCHAR(20)     NOT NULL,
-    license_status          VARCHAR(10)     NOT NULL DEFAULT 'Active',
-    issued_date             DATE            NOT NULL,
-    expiry_date             DATE            NOT NULL,
-    agency_code             VARCHAR(10)     NOT NULL,
-    
-    PRIMARY KEY (`license_no`)
+    license_no          VARCHAR(15)     NOT NULL,
+    fname               VARCHAR(20)     NOT NULL,
+    lname               VARCHAR(20)     NOT NULL,
+    mname               VARCHAR(20),
+    bday                DATE            NOT NULL,
+    sex                 CHAR(1)         NOT NULL,
+    nationality         VARCHAR(30)     NOT NULL,
+    height_cm           DECIMAL(5,2)    NOT NULL,
+    weight_kg           DECIMAL(5,2)    NOT NULL,
+    eye_color           VARCHAR(15)     NOT NULL,
+    blood_type          VARCHAR(3)      NOT NULL,
+    contact_no          VARCHAR(15)     NOT NULL,
+    organ_donor         BOOLEAN         NOT NULL DEFAULT FALSE,
+    mother_fname        VARCHAR(20)     NOT NULL,
+    mother_lname        VARCHAR(20)     NOT NULL,
+    mother_mname        VARCHAR(20),
+    father_fname        VARCHAR(20)     NOT NULL,
+    father_lname        VARCHAR(20)     NOT NULL,
+    father_mname        VARCHAR(20),
+    emrg_contact_person VARCHAR(60)     NOT NULL,
+    emrg_contact_no     VARCHAR(15)     NOT NULL,
+    license_type        VARCHAR(20)     NOT NULL,
+    license_status      VARCHAR(10)     NOT NULL DEFAULT 'Active',
+    issued_date         DATE            NOT NULL,
+    expiry_date         DATE            NOT NULL,
+    agency_code         VARCHAR(10)     NOT NULL,
+    PRIMARY KEY (`license_no`),
+    CONSTRAINT chk_sex         CHECK (sex IN ('M', 'F')),
+    CONSTRAINT chk_lic_status  CHECK (license_status IN ('Active','Suspended','Expired','Revoked')),
+    CONSTRAINT chk_lic_type    CHECK (license_type IN ('Student Permit','Non-Professional','Professional'))
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ============================================================
@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS `vehicle` (
     license_no      VARCHAR(15)     NOT NULL,
     PRIMARY KEY (`plate_no`, `engine_no`, `chassis_no`),
     FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`)
+    CONSTRAINT chk_ownership CHECK (ownership IN ('Private','For Hire','Government'))
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ============================================================
@@ -109,6 +110,7 @@ CREATE TABLE IF NOT EXISTS `violation_ticket` (
     FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (`plate_no`, `engine_no`, `chassis_no`) 
     REFERENCES `vehicle`(`plate_no`, `engine_no`, `chassis_no`) ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT chk_vio_status CHECK (violation_status IN ('Paid','Unpaid','Contested'))
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ============================================================

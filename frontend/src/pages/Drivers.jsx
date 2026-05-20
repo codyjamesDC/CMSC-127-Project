@@ -342,7 +342,7 @@ export default function Drivers() {
             <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Driver'}</button>
           </>}
         >
-          <FormFields />
+          {FormFields()}
         </Modal>
       )}
 

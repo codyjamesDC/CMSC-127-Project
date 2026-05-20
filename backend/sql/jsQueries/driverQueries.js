@@ -1,8 +1,14 @@
 // backend/sql/jsQueries/driverQueries.js
 export const driverQueries = {
-  // READ (Removed the LEFT JOIN to prevent duplicate row combinatorial explosion)
-  selectAll: `SELECT * FROM driver`,
-  selectByLicense: 'SELECT * FROM driver WHERE license_no = ?',
+  // READ
+  selectAll: `
+      SELECT *, CONCAT(fname, ' ', COALESCE(mname, ''), ' ', lname) AS full_name 
+      FROM driver
+    `,
+    selectByLicense: `
+      SELECT *, CONCAT(fname, ' ', COALESCE(mname, ''), ' ', lname) AS full_name 
+      FROM driver WHERE license_no = ?
+    `,
   
   // CREATE
   insert: `

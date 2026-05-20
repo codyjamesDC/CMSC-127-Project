@@ -60,6 +60,14 @@ export const createTicket = async (req, res) => {
       violations // Expected: [{ violation_name: '...', fine_amount: 1000 }, ...]
     } = req.body;
 
+    //GUARD CHECKS
+    if (!location || !date || !license_no || !plate_no) {
+      return res.status(400).json({ success: false, message: 'Missing required fields: location, date, driver, vehicle' });
+    }
+    if (!violations || !Array.isArray(violations) || violations.length === 0 || !violations[0].violation_name) {
+      return res.status(400).json({ success: false, message: 'At least one violation must be provided' });
+    }
+
     // 🛑 NEW VALIDATION: Prevent accidental double-submissions (Logical Duplicate Check)
     // Checks if the exact same driver & car got a ticket on the exact same date
     const checkDuplicateSql = `

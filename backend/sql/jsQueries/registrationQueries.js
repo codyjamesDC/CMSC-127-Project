@@ -3,6 +3,7 @@ export const registrationQueries = {
     SELECT
       vr.registration_no,
       vr.registration_no AS registration_number,
+      vr.plate_no AS plate_number,
       vr.registration_date,
       vr.expiration_date,
       vr.plate_no,

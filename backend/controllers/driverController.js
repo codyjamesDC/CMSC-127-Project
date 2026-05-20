@@ -76,6 +76,11 @@ export const createDriver = async (req, res) => {
       license_type, license_status, issue_date, expiration_date
     } = req.body;
 
+    //Guard Check
+    if (!license_number || !full_name || !date_of_birth || !sex) {
+      return res.status(400).json({ success: false, message: 'Missing required fields: license_no, full_name, date_of_birth, sex' });
+    }
+
     // 🛑 NEW VALIDATION: Check for duplicate License Number
     const [existing] = await conn.query(driverQueries.selectByLicense, [license_number]);
     if (existing.length > 0) {
