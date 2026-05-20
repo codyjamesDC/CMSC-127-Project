@@ -1,4 +1,3 @@
-// src/pages/Drivers.jsx
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { driversApi } from '../api/client';
@@ -67,6 +66,17 @@ const emptyForm = {
   addresses: [],
 };
 
+// MODIFIED: Moved to top-level and enhanced to handle timezone shifting from DB strings
+const formatLocalYYYYMMDD = (dateVal) => {
+  if (!dateVal) return '';
+  const d = dateVal instanceof Date ? dateVal : new Date(dateVal);
+  if (isNaN(d.getTime())) return typeof dateVal === 'string' ? dateVal.split('T')[0] : '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 // Mirrors how Registrations.jsx computes status — only overrides 'Active',
 // never touches 'Suspended' or 'Revoked'.
 const computeLicenseStatus = (driver) => {
@@ -99,14 +109,21 @@ export default function Drivers() {
       const res = await driversApi.getAll({ license_type: filterType, license_status: filterStatus });
       const rawData = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
 
-      const mappedDrivers = rawData.map(d => ({
-        ...d,
-        full_name: [d.fname, d.mname, d.lname].filter(Boolean).join(' '),
-        addresses: d.addresses || [],
-        conditions: d.conditions || [],
-        license_codes: d.license_codes || [],
-        license_status: computeLicenseStatus(d), // auto-expire if past expiry_date
-      }));
+      const mappedDrivers = rawData.map(d => {
+        // MODIFIED: Applied formatLocalYYYYMMDD to prevent the 1-day subtraction bug
+        const mappedD = {
+          ...d,
+          bday: formatLocalYYYYMMDD(d.bday),
+          issued_date: formatLocalYYYYMMDD(d.issued_date),
+          expiry_date: formatLocalYYYYMMDD(d.expiry_date),
+          full_name: [d.fname, d.mname, d.lname].filter(Boolean).join(' '),
+          addresses: d.addresses || [],
+          conditions: d.conditions || [],
+          license_codes: d.license_codes || [],
+        };
+        mappedD.license_status = computeLicenseStatus(mappedD); // auto-expire if past expiry_date
+        return mappedD;
+      });
 
       setDrivers(mappedDrivers);
     } catch {
@@ -207,14 +224,6 @@ export default function Drivers() {
     }
 
     const newExpiryDate = new Date(expireYear, bMonth - 1, bDay);
-
-    // Formats dates back to 'YYYY-MM-DD' for inputs
-    const formatLocalYYYYMMDD = (d) => {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    };
 
     setForm(f => ({
       ...f,

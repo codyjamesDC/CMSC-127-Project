@@ -1,4 +1,3 @@
-// frontend/src/pages/Violations.jsx
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { violationsApi, driversApi, vehiclesApi } from '../api/client';
