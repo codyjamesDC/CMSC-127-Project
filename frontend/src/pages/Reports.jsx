@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { reportsApi } from '../api/client';
+import useSortableTable from '../hooks/useSortableTable';
 
 const LICENSE_TYPES = ['', 'Student Permit', 'Non-Professional', 'Professional'];
 const LICENSE_STATUSES = ['', 'Active', 'Expired', 'Suspended'];
