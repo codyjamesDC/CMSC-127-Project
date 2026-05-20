@@ -196,7 +196,7 @@ export default function Vehicles() {
   };
 
   const handleDelete = async (v) => {
-    if (!window.confirm(`Delete vehicle "${v.plate_no}"?`)) return;
+    if (!window.confirm(`WARNING: Deleting vehicle "${v.plate_no}" will permanently remove all of its associated REGISTRATIONS and TRAFFIC VIOLATION TICKETS.\n\nDo you want to proceed?`)) return;
     try { await vehiclesApi.delete(v.plate_no); load(); }
     catch (e) { alert('Delete failed: ' + (e.response?.data?.message ?? e.message)); }
   };
