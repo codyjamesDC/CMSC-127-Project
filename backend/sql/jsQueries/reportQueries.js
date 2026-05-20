@@ -28,10 +28,22 @@ export const reportQueries = {
   driversByStatus: `SELECT * FROM vw_driver_license_status WHERE license_status IN (?)`,
   
   // 5. Driver violations within a date range
-  driverViolationsByDate: `
-    SELECT * FROM vw_violation_history 
-    WHERE license_no = ? AND date BETWEEN ? AND ?
-  `,
+driverViolationsByDate: `
+  SELECT
+    vt.ticket_id,
+    vt.location,
+    vt.date,
+    vt.violation_status,
+    vt.apprehending_officer,
+    vt.plate_no,
+    v.violation_name,
+    v.fine_amount
+  FROM violation_ticket vt
+  JOIN violation v ON v.ticket_id = vt.ticket_id
+  WHERE vt.license_no = ?
+    AND vt.date BETWEEN ? AND ?
+  ORDER BY vt.date ASC
+`,
   
   // 6. Violation summary by year
   violationSummaryByYear: `

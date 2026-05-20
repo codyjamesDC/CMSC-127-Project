@@ -25,7 +25,11 @@ const vehicleRules = {
   plate_no: { required: true },
   engine_no: { required: true },
   chassis_no: { required: true },
-  license_no: { required: true }
+  license_no: { required: true },
+  make: { required: true },
+  model: { required: true },
+  year: { required: true },
+  color: { required: true }
 }
 
 // Defined outside component to prevent focus loss on re-render
@@ -43,12 +47,12 @@ const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPE
       </select>
     </div>
     <div className="form-group">
-      <label className="form-label">Engine Number</label>
+      <label className="form-label">Engine Number *</label>
       {/* P0 1.1 FIX: name="engine_no" (was engine_number) */}
       <input className="form-control" name="engine_no" value={form.engine_no} onChange={handleChange} placeholder="ENGINE123" />
     </div>
     <div className="form-group">
-      <label className="form-label">Chassis Number</label>
+      <label className="form-label">Chassis Number *</label>
       {/* P0 1.1 FIX: name="chassis_no" (was chassis_number) */}
       <input className="form-control" name="chassis_no" value={form.chassis_no} onChange={handleChange} placeholder="CHASSIS123" />
     </div>
@@ -59,23 +63,23 @@ const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPE
       </select>
     </div>
     <div className="form-group">
-      <label className="form-label">Make (Brand)</label>
+      <label className="form-label">Make (Brand) *</label>
       <input className="form-control" name="make" value={form.make} onChange={handleChange} placeholder="Toyota" />
     </div>
     <div className="form-group">
-      <label className="form-label">Model</label>
+      <label className="form-label">Model *</label>
       <input className="form-control" name="model" value={form.model} onChange={handleChange} placeholder="Vios" />
     </div>
     <div className="form-group">
-      <label className="form-label">Year</label>
+      <label className="form-label">Year *</label>
       <input className="form-control" type="number" name="year" value={form.year} onChange={handleChange} placeholder="2024" min="1900" max="2030" />
     </div>
     <div className="form-group">
-      <label className="form-label">Color</label>
+      <label className="form-label">Color *</label>
       <input className="form-control" name="color" value={form.color} onChange={handleChange} placeholder="White" />
     </div>
     <div className="form-group full">
-      <label className="form-label">Registered Owner (Driver)</label>
+      <label className="form-label">Registered Owner (Driver) *</label>
       {/* P0 1.1 FIX: name="license_no" (was driver_id) */}
       <select className="form-control" name="license_no" value={form.license_no ?? ''} onChange={handleChange}>
         <option value="">— Select Owner —</option>

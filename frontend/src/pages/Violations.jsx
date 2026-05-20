@@ -183,20 +183,20 @@ export default function Violations() {
         <input className="form-control" type="date" name="date" value={form.date?.split('T')[0] ?? ''} onChange={handleChange} />
       </div>
       <div className="form-group">
-        <label className="form-label">Fine Amount (₱)</label>
+        <label className="form-label">Fine Amount (₱) *</label>
         <input className="form-control" type="number" name="fine_amount" value={form.fine_amount} onChange={handleChange} placeholder="2000" />
       </div>
       <div className="form-group full">
-        <label className="form-label">Location</label>
+        <label className="form-label">Location *</label>
         <input className="form-control" name="location" value={form.location} onChange={handleChange} placeholder="EDSA, Quezon City" />
       </div>
       <div className="form-group">
-        <label className="form-label">Apprehending Officer</label>
+        <label className="form-label">Apprehending Officer *</label>
         <input className="form-control" name="apprehending_officer" value={form.apprehending_officer} onChange={handleChange} placeholder="PO1 Juan Dela Cruz" />
       </div>
       {/* P0 1.1 FIX: name="license_no" (was driver_id) */}
       <div className="form-group">
-        <label className="form-label">Driver</label>
+        <label className="form-label">Driver *</label>
         <select className="form-control" name="license_no" value={form.license_no} onChange={handleChange}>
           <option value="">— Select Driver —</option>
           {drivers.map(d => <option key={d.license_no} value={d.license_no}>{d.full_name} · {d.license_no}</option>)}
@@ -204,7 +204,7 @@ export default function Violations() {
       </div>
       {/* P0 1.1 FIX: name="plate_no" (was vehicle_id) */}
       <div className="form-group">
-        <label className="form-label">Vehicle</label>
+        <label className="form-label">Vehicle *</label>
         <select className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange}>
           <option value="">— Select Vehicle —</option>
           {vehicles.map(v => <option key={v.plate_no} value={v.plate_no}>{v.plate_no} · {v.make} {v.model}</option>)}

@@ -12,7 +12,8 @@ const driverRules = {
   fname: { required: true },
   lname: { required: true },
   bday: { required: true },
-  sex: { required: true }
+  sex: { required: true },
+  contact_no: { required: true }
 }
 
 const emptyForm = {
@@ -211,7 +212,7 @@ export default function Drivers() {
         </select>
       </div>
       <div className="form-group">
-        <label className="form-label">Contact No.</label>
+        <label className="form-label">Contact No. *</label>
         <input className="form-control" name="contact_no" value={form.contact_no} onChange={handleChange} placeholder="09171234567" />
       </div>
 
@@ -266,14 +267,14 @@ export default function Drivers() {
       )}
 
       <div className="form-group">
-        <label className="form-label">Issue Date</label>
+        <label className="form-label">Issue Date *</label>
         <input className="form-control" type="date" name="issued_date" value={form.issued_date?.split('T')[0] ?? ''} onChange={handleChange} />
       </div>
 
       <div className="form-group">
         {/* 🛑 NEW RENEW BUTTON: Rendered right next to the Expiration Date label */}
         <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Expiration Date</span>
+          <span>Expiration Date *</span>
           {modal === 'edit' && (
             <button type="button" onClick={handleRenew} style={{ background: 'var(--lto-blue)', color: 'white', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}>
               RENEW 5 YRS

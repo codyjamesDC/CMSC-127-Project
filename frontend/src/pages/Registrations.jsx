@@ -14,7 +14,9 @@ const emptyForm = {
 
 const registrationRules = {
   registration_number: { required: true },
-  plate_no: { required: true }
+  plate_no: { required: true },
+  registration_date: { required: true },
+  expiration_date: { required: true }
 }
 
 function StatusBadge({ status }) {
@@ -132,11 +134,11 @@ export default function Registrations() {
         </select>
       </div>
       <div className="form-group">
-        <label className="form-label">Registration Date</label>
+        <label className="form-label">Registration Date *</label>
         <input className="form-control" type="date" name="registration_date" value={form.registration_date?.split('T')[0] ?? ''} onChange={handleChange} />
       </div>
       <div className="form-group">
-        <label className="form-label">Expiration Date</label>
+        <label className="form-label">Expiration Date *</label>
         <input className="form-control" type="date" name="expiration_date" value={form.expiration_date?.split('T')[0] ?? ''} onChange={handleChange} />
       </div>
     </div>
