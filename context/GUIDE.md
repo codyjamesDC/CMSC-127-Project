@@ -1,868 +1,615 @@
-# React + Tailwind CSS Frontend Migration
+# LTO Vehicle Manager — Improvement Guide
 
-Comprehensive guide for replacing terminal-based UI with a modern React web application using Tailwind CSS.
-
-## 📊 Project Status
-
-| Phase | Status | Details |
-|-------|--------|---------|
-| **Phase 1: Project Setup** | ✅ **COMPLETE** | Dependencies installed, config files created, directory structure ready |
-| **Phase 2: Core Component Development** | ✅ **COMPLETE** | 16 components created, React Router configured, API services ready |
-| **Phase 3: API Integration** | ✅ **COMPLETE** | All CRUD operations implemented, report endpoints wired up |
-| **Phase 4: Styling & UX** | ✅ **COMPLETE** | Enhanced theming, responsive design, icons, animations |
-| **Phase 5: Features & Enhancement** | 🔄 Not Started | Search, filtering, pagination, data export |
-| **Phase 6: Testing & Deployment** | 🔄 Not Started | QA, optimization, deployment |
+> **CMSC 127 · AY 2025–2026**
+> Based on rubric analysis of the current codebase. Follow this guide top-to-bottom; critical fixes first.
 
 ---
 
-## ✅ Phase 1: Project Setup - COMPLETED
+## Table of Contents
 
-**Completion Date**: May 12, 2026
-
-**Installation Results**:
-- ✅ 243 packages installed successfully
-- ✅ 0 vulnerabilities found
-- ✅ All configurations in place (Tailwind, PostCSS, .env)
-- ✅ Component directory structure created
-
-**Documentation**: [PHASE-1-COMPLETION.md](PHASE-1-COMPLETION.md)
+1. [Critical Fixes (Do These First)](#1-critical-fixes-do-these-first)
+2. [Database Design Improvements](#2-database-design-improvements)
+3. [CRUD Operation Fixes](#3-crud-operation-fixes)
+4. [Edge Case Handling](#4-edge-case-handling)
+5. [Reports Fixes](#5-reports-fixes)
+6. [Code Quality Improvements](#6-code-quality-improvements)
+7. [Quick Reference: Field Name Mapping](#7-quick-reference-field-name-mapping)
 
 ---
 
-## ✅ Phase 2: Core Component Development - COMPLETED
+## 1. Critical Fixes (Do These First)
 
-**Completion Date**: May 15, 2026
-
-**Components Delivered**:
-- ✅ 6 Common UI Components (Button, Input, Modal, Loading, Alert, Table)
-- ✅ 3 Layout Components (Header, Sidebar, Footer)
-- ✅ 8 Management Components:
-  - 2 Driver Components (DriverList, DriverForm)
-  - 2 Vehicle Components (VehicleList, VehicleForm)
-  - 2 Ticket Components (TicketList, TicketForm)
-  - 1 Report Component (ReportList)
-- ✅ 5 Page Components (Dashboard, DriversPage, VehiclesPage, TicketsPage, ReportsPage)
-- ✅ 4 API Services (driverService, vehicleService, ticketService, reportService)
-
-**Features Implemented**:
-- ✅ React Router with 5 main routes
-- ✅ Responsive layout with mobile navigation
-- ✅ Driver management with CRUD operations
-- ✅ Vehicle management with CRUD operations
-- ✅ Ticket management with CRUD operations and violation tracking
-- ✅ Report dashboard with 4 report types (violations by year, by location, expired registrations, driver license status)
-- ✅ API service layer with Axios
-- ✅ Error handling and loading states
-- ✅ Form validation
-- ✅ Search functionality across all entities
-
-**Documentation**: [PHASE-2-COMPLETION.md](PHASE-2-COMPLETION.md)
+These issues will cause **visible failures** during grading if tested through the UI.
 
 ---
 
-## ✅ Phase 3: API Integration - COMPLETED
+### 1.1 Frontend ↔ Backend Field Name Mismatch
 
-**Completion Date**: May 15, 2026
+This is the single most damaging issue. The frontend sends field names that the backend does not recognize, causing silent `null` inserts or HTTP 400/500 errors.
 
-**Current Status**: All API services created and integrated with UI components
+#### Driver — `frontend/src/pages/Drivers.jsx`
 
-**Components Completed**:
-- ✅ Driver API Integration
-  - Full CRUD operations in `driverService.js`
-  - DriverList component with search and list operations
-  - DriverForm component with add/edit/delete operations
-  - Error handling and loading states
-  - Form validation
-  
-- ✅ Vehicle API Integration
-  - Full CRUD operations in `vehicleService.js`
-  - VehicleList component with search and list operations
-  - VehicleForm component with add/edit/delete operations
-  - Error handling and loading states
-  - Form validation
+The form currently uses wrong field names. Update the `emptyForm` and all references:
 
-- ✅ Ticket API Integration
-  - Full CRUD operations in `ticketService.js`
-  - TicketList component with search and list operations
-  - TicketForm component with add/edit/delete and violation management
-  - Error handling and loading states
-  - Form validation
+```js
+// CURRENT (wrong)
+const emptyForm = {
+  full_name: '', date_of_birth: '', license_number: '',
+  issue_date: '', expiration_date: '', ...
+};
 
-- ✅ Report API Integration
-  - reportService.js created with 7 report endpoints
-  - ReportList component with 4 report types
-  - Backend report routes registered in router.js
-  - Queries: violations by year, by location, expired registrations, driver license status
-
-**API Services**:
-- ✅ Driver Service - Full CRUD implemented
-- ✅ Vehicle Service - Full CRUD implemented  
-- ✅ Ticket Service - Full CRUD implemented
-- ✅ Report Service - Read-only reports with multiple queries
-
-**Backend Integration**:
-- ✅ All API routes registered in router.js
-- ✅ Report routes properly configured
-- ✅ Error handling with proper HTTP status codes
-- ✅ Data validation on backend
-
----
-
-## ✅ Phase 4: Styling & UX - COMPLETED
-
-**Completion Date**: May 15, 2026
-
-**Enhancements Implemented**:
-
-**1. UI Component Library Enhancement**
-- ✅ Button Component
-  - Added icon support with react-icons
-  - Loading states with spinner animations
-  - Smooth transitions and hover effects
-  - Active state animations (scale effect)
-  - Multiple variants (primary, secondary, danger, success, outline)
-
-- ✅ Input Component
-  - Icon support for better UX
-  - Improved error states with visual indicators
-  - Smooth focus transitions
-  - Red background for error states
-  - Icon placement with proper styling
-
-- ✅ Modal Component
-  - Smooth slide-up and fade-in animations
-  - Better header with gradient background
-  - Improved close button styling
-  - Better footer spacing and layout
-  - Enhanced shadow and rounded corners
-
-- ✅ Alert Component
-  - Icon indicators for different alert types (success, error, warning, info)
-  - Smooth slide-down animation
-  - Better visual hierarchy
-  - Cleaner close button with opacity transitions
-
-- ✅ Loading Component
-  - Custom spin animation
-  - Message display support
-  - Better visual feedback
-  - Larger indicator with proper sizing
-
-- ✅ Table Component
-  - Responsive mobile-first design
-  - Mobile card view for small screens
-  - Desktop table view with proper styling
-  - Hover effects on rows
-  - Better borders and spacing
-  - Empty state with icons
-
-**2. Layout Components**
-- ✅ Header Component
-  - Gradient background (blue-600 to blue-700)
-  - Sticky positioning for better UX
-  - Responsive title (shows full name on desktop, abbreviation on mobile)
-  - Version badge styling
-  - Icons from react-icons
-
-- ✅ Sidebar Component
-  - Gradient background (gray-900 to gray-800)
-  - Icon-based menu items with react-icons
-  - Active state with scale transform
-  - Smooth transitions and hover effects
-  - Footer section with system info
-  - Better mobile toggle styling
-
-- ✅ Footer Component
-  - Gradient background matching theme
-  - Multi-column layout on desktop
-  - Better spacing and typography
-  - Version and technology info
-  - Improved visual hierarchy
-
-**3. List Components**
-- ✅ DriverList, VehicleList, TicketList
-  - Added react-icons for action buttons (Edit, Delete, Add)
-  - Enhanced search bar with icon
-  - Better title and button styling
-  - Improved spacing and layout
-  - Enhanced loading messages
-
-- ✅ ReportList
-  - Icon-based report selection buttons
-  - Responsive button grid (1-4 columns)
-  - Better report titles and descriptions
-  - Enhanced empty state
-
-**4. Styling & Theming**
-- ✅ Tailwind CSS optimization
-  - Gradient backgrounds throughout
-  - Better color consistency
-  - Improved spacing (mobile-first approach)
-  - Better responsive breakpoints
-  
-- ✅ Animations
-  - Smooth transitions on all interactive elements
-  - Spin animation for loading states
-  - Fade-in animation for modals
-  - Slide animations for alerts
-  - Scale transforms on hover/active states
-
-- ✅ Responsive Design
-  - Mobile-first approach
-  - Hamburger menu on mobile
-  - Responsive tables (card view on mobile)
-  - Flexible layouts with flexbox and grid
-  - Better spacing on all screen sizes
-
-**5. Visual Feedback**
-- ✅ Hover states on all interactive elements
-  - Color transitions
-  - Shadow enhancements
-  - Scale transforms
-  
-- ✅ Focus states
-  - Visible focus rings
-  - Clear focus indicators
-  - Accessible keyboard navigation
-
-- ✅ Loading states
-  - Spinner animations
-  - Disabled button states
-  - Custom messages
-
-**Dependencies Added**:
-- react-icons - Comprehensive icon library
-
----
-
-## 📋 Checklist
-
-### Phase 1: Project Setup
-- [x] Review existing terminal UI functionality and requirements
-- [x] Audit backend API endpoints and response formats
-- [x] Set up Tailwind CSS in existing React/Vite frontend
-- [x] Create component directory structure
-- [x] Install required dependencies
-
-### Phase 2: Core Component Development
-- [x] Create navigation/layout components
-- [x] Build driver management UI
-- [x] Build vehicle management UI
-- [x] Build ticket management UI
-- [x] Build report management UI
-- [x] Implement form components
-
-### Phase 3: API Integration
-- [x] Connect driver components to backend API
-- [x] Connect vehicle components to backend API
-- [x] Connect ticket components to backend API
-- [x] Connect report components to backend API
-- [x] Implement error handling and loading states
-- [x] Add form validation
-
-### Phase 4: Styling & UX
-- [x] Apply Tailwind CSS theming
-- [x] Implement responsive design
-- [x] Add icons and visual feedback
-- [x] Style forms and input fields
-- [x] Create reusable UI component library
-
-### Phase 5: Features & Enhancement
-- [ ] Implement search/filter functionality
-- [ ] Add data pagination
-- [ ] Create data export features (if needed)
-- [ ] Implement user feedback (toasts/alerts)
-- [ ] Add loading indicators
-
-### Phase 6: Testing & Deployment
-- [ ] Test all CRUD operations
-- [ ] Test API error scenarios
-- [ ] Performance optimization
-- [ ] Cross-browser testing
-- [ ] Deploy to production
-
----
-
-## Step-by-Step Implementation
-
-### Step 1: Analyze Current Terminal UI
-**Goal**: Document all features and workflows from the Python terminal application
-
-1. Review `terminal/ui.py` for UI structure and flows
-2. Identify all user interactions and workflows
-3. Document data entry requirements
-4. List all display/output views
-5. Create wireframes or mockups for each screen
-
-**Files to Review**:
-- `terminal/ui.py` - User interface logic
-- `terminal/main.py` - Application entry point
-- `terminal/database.py` - Database operations
-
----
-
-### Step 2: Set Up Tailwind CSS
-**Goal**: Configure Tailwind CSS in the existing React/Vite project
-
-1. **Install Tailwind CSS**:
-   ```bash
-   cd frontend
-   npm install -D tailwindcss postcss autoprefixer
-   npx tailwindcss init -p
-   ```
-
-2. **Configure `tailwind.config.js`**:
-   ```javascript
-   export default {
-     content: [
-       "./index.html",
-       "./src/**/*.{js,jsx}",
-     ],
-     theme: {
-       extend: {},
-     },
-     plugins: [],
-   }
-   ```
-
-3. **Add Tailwind directives to `src/index.css`**:
-   ```css
-   @tailwind base;
-   @tailwind components;
-   @tailwind utilities;
-   ```
-
-4. **Remove default CSS** and replace with Tailwind utilities
-
----
-
-### Step 3: Create Component Directory Structure
-**Goal**: Organize components for scalability
-
-```
-src/
-├── components/
-│   ├── layout/
-│   │   ├── Header.jsx
-│   │   ├── Sidebar.jsx
-│   │   └── Footer.jsx
-│   ├── drivers/
-│   │   ├── DriverList.jsx
-│   │   ├── DriverForm.jsx
-│   │   ├── DriverDetail.jsx
-│   │   └── DriverCard.jsx
-│   ├── vehicles/
-│   │   ├── VehicleList.jsx
-│   │   ├── VehicleForm.jsx
-│   │   ├── VehicleDetail.jsx
-│   │   └── VehicleCard.jsx
-│   ├── tickets/
-│   │   ├── TicketList.jsx
-│   │   ├── TicketForm.jsx
-│   │   ├── TicketDetail.jsx
-│   │   └── TicketCard.jsx
-│   ├── reports/
-│   │   ├── ReportList.jsx
-│   │   ├── ReportDetail.jsx
-│   │   └── ReportViewer.jsx
-│   └── common/
-│       ├── Button.jsx
-│       ├── Input.jsx
-│       ├── Modal.jsx
-│       ├── Loading.jsx
-│       ├── Alert.jsx
-│       └── Table.jsx
-├── pages/
-│   ├── Dashboard.jsx
-│   ├── DriversPage.jsx
-│   ├── VehiclesPage.jsx
-│   ├── TicketsPage.jsx
-│   └── ReportsPage.jsx
-├── services/
-│   ├── api.js
-│   ├── driverService.js
-│   ├── vehicleService.js
-│   ├── ticketService.js
-│   └── reportService.js
-├── hooks/
-│   ├── useDrivers.js
-│   ├── useVehicles.js
-│   ├── useTickets.js
-│   └── useReports.js
-└── utils/
-    ├── constants.js
-    ├── helpers.js
-    └── formatters.js
-```
-
----
-
-### Step 4: Install Dependencies
-**Goal**: Add necessary packages for API calls, state management, etc.
-
-```bash
-cd frontend
-npm install axios react-router-dom
-npm install -D tailwindcss postcss autoprefixer
-```
-
-**Optional (for enhanced functionality)**:
-```bash
-npm install zustand            # State management
-npm install react-hot-toast    # Notifications
-npm install react-icons        # Icon library
-npm install clsx              # Conditional classNames
-```
-
----
-
-### Step 5: Create API Service Layer
-**Goal**: Centralize backend API communication
-
-**File: `src/services/api.js`**
-```javascript
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-export default api;
-```
-
-**File: `src/services/driverService.js`**
-```javascript
-import api from './api';
-
-export const driverService = {
-  getAll: () => api.get('/drivers'),
-  getById: (id) => api.get(`/drivers/${id}`),
-  create: (data) => api.post('/drivers', data),
-  update: (id, data) => api.put(`/drivers/${id}`, data),
-  delete: (id) => api.delete(`/drivers/${id}`),
+// FIXED — match backend driverQueries.insert parameter order
+const emptyForm = {
+  license_no: '', fname: '', lname: '', mname: '',
+  bday: '', sex: 'M', nationality: 'Filipino',
+  height_cm: '', weight_kg: '', eye_color: 'Brown',
+  blood_type: 'O+', contact_no: '', organ_donor: 0,
+  mother_fname: '', mother_lname: '', mother_mname: '',
+  father_fname: '', father_lname: '', father_mname: '',
+  emrg_contact_person: '', emrg_contact_no: '',
+  license_type: 'Non-Professional', license_status: 'Active',
+  issued_date: '', expiry_date: '', agency_code: '',
+  conditions: [], license_codes: [], addresses: []
 };
 ```
 
-Repeat for: `vehicleService.js`, `ticketService.js`, `reportService.js`
+Update every form field `name=` attribute to match (e.g., `name="fname"`, `name="license_no"`, `name="issued_date"`).
+
+#### Vehicle — `frontend/src/pages/Vehicles.jsx`
+
+```js
+// CURRENT (wrong)
+{ plate_number: '', engine_number: '', chassis_number: '', driver_id: '' }
+
+// FIXED
+{ plate_no: '', engine_no: '', chassis_no: '',
+  ownership: 'Private', vehicle_type: 'Sedan',
+  color: '', make: '', model: '', year: '', license_no: '' }
+```
+
+Update all `name=` attributes in the form fields accordingly.
+
+#### Registration — `frontend/src/pages/Registrations.jsx`
+
+```js
+// CURRENT (wrong) — sends vehicle_id
+<select name="vehicle_id" ...>
+
+// FIXED — backend reads req.body.plate_no
+<select name="plate_no" ...>
+```
+
+Also update `emptyForm`:
+
+```js
+const emptyForm = {
+  registration_number: '', plate_no: '',
+  registration_date: '', expiration_date: ''
+};
+```
+
+#### Violation (Ticket) — `frontend/src/pages/Violations.jsx`
+
+The backend `createTicket` expects a specific shape. The frontend form must be restructured:
+
+```js
+// CURRENT (wrong shape sent to API)
+{ violation_type: '', date_of_violation: '', driver_id: '', vehicle_id: '', fine_amount: '' }
+
+// FIXED — match ticketController createTicket expectations
+{
+  location: '', date: '', violation_status: 'Unpaid',
+  apprehending_officer: '', license_no: '', plate_no: '',
+  engine_no: '', chassis_no: '',
+  violations: [{ violation_name: '', fine_amount: 0 }]
+}
+```
+
+Update the form fields and the `handleSave` function to build the correct payload before calling `violationsApi.create(payload)`.
 
 ---
 
-### Step 6: Build Layout Components
-**Goal**: Create the main application structure
+### 1.2 Status Value Case Mismatch
 
-**File: `src/components/layout/Header.jsx`**
-```javascript
-export default function Header() {
-  return (
-    <header className="bg-blue-600 text-white shadow-md">
-      <div className="container mx-auto px-4 py-4">
-        <h1 className="text-2xl font-bold">Traffic Management System</h1>
-      </div>
-    </header>
-  );
-}
+The database seeds use **Title Case** (`'Active'`, `'Expired'`, `'Suspended'`, `'Paid'`, `'Unpaid'`) but the frontend dropdowns use **lowercase** (`'valid'`, `'expired'`, `'paid'`, `'unpaid'`). This breaks filters and report queries.
+
+**Fix Option A — Change the frontend to match the DB (recommended):**
+
+```js
+// Drivers.jsx
+const LICENSE_STATUSES = ['Active', 'Suspended', 'Expired', 'Revoked'];
+
+// Violations.jsx
+const STATUSES = ['Unpaid', 'Paid', 'Contested'];
+
+// Registrations.jsx — registration_status is computed by the backend (CASE WHEN),
+// so the filter select should pass 'active' or 'expired' to the query param only,
+// which the registrationController already handles correctly. No change needed here.
 ```
 
-**File: `src/components/layout/Sidebar.jsx`**
-```javascript
-import { Link } from 'react-router-dom';
+**Fix Option B — Normalize the DB to lowercase:**
 
-export default function Sidebar() {
-  return (
-    <nav className="bg-gray-800 text-white w-64 min-h-screen">
-      <ul className="space-y-2 p-4">
-        <li><Link to="/" className="hover:bg-gray-700 p-2 block">Dashboard</Link></li>
-        <li><Link to="/drivers" className="hover:bg-gray-700 p-2 block">Drivers</Link></li>
-        <li><Link to="/vehicles" className="hover:bg-gray-700 p-2 block">Vehicles</Link></li>
-        <li><Link to="/tickets" className="hover:bg-gray-700 p-2 block">Tickets</Link></li>
-        <li><Link to="/reports" className="hover:bg-gray-700 p-2 block">Reports</Link></li>
-      </ul>
-    </nav>
-  );
-}
+Run this once on the database, then update seeds in `data.sql`:
+
+```sql
+UPDATE driver SET license_status = LOWER(license_status);
+UPDATE violation_ticket SET violation_status = LOWER(violation_status);
 ```
+
+Then update `data.sql` seeds to use lowercase from the start.
 
 ---
 
-### Step 7: Create Common UI Components
-**Goal**: Build reusable components for consistency
+## 2. Database Design Improvements
 
-**File: `src/components/common/Button.jsx`**
-```javascript
-export default function Button({ 
-  children, 
-  variant = 'primary', 
-  className = '', 
-  ...props 
-}) {
-  const baseStyle = 'px-4 py-2 rounded font-medium transition';
-  const variants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700',
-    secondary: 'bg-gray-300 text-gray-800 hover:bg-gray-400',
-    danger: 'bg-red-600 text-white hover:bg-red-700',
-  };
+### 2.1 Add CHECK Constraints
 
-  return (
-    <button className={`${baseStyle} ${variants[variant]} ${className}`} {...props}>
-      {children}
-    </button>
-  );
-}
+Strengthen data integrity by constraining known-value columns. Add to `schema.sql`:
+
+```sql
+-- In the driver table definition, add:
+CONSTRAINT chk_sex         CHECK (sex IN ('M', 'F')),
+CONSTRAINT chk_organ_donor CHECK (organ_donor IN (0, 1)),
+CONSTRAINT chk_lic_status  CHECK (license_status IN ('Active','Suspended','Expired','Revoked')),
+CONSTRAINT chk_lic_type    CHECK (license_type IN ('Student Permit','Non-Professional','Professional')),
+
+-- In violation_ticket:
+CONSTRAINT chk_vio_status  CHECK (violation_status IN ('Paid','Unpaid','Contested')),
+
+-- In vehicle:
+CONSTRAINT chk_ownership   CHECK (ownership IN ('Private','For Hire','Government'))
 ```
 
-**File: `src/components/common/Input.jsx`**
-```javascript
-export default function Input({ label, error, ...props }) {
-  return (
-    <div className="mb-4">
-      {label && <label className="block text-sm font-medium mb-2">{label}</label>}
-      <input
-        className={`w-full px-3 py-2 border rounded ${
-          error ? 'border-red-500' : 'border-gray-300'
-        }`}
-        {...props}
-      />
-      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-    </div>
-  );
-}
+### 2.2 Fix organ_donor Type Inconsistency
+
+`schema.sql` uses `TINYINT(1)` but `delacruz_odon_reyes_milestone.sql` uses `BOOLEAN`. Standardize to one:
+
+```sql
+-- In schema.sql, change to:
+organ_donor   BOOLEAN   NOT NULL DEFAULT FALSE,
 ```
 
----
+### 2.3 Add Indexes for Frequent Lookups
 
-### Step 8: Build Feature Modules
+Report queries filter by `license_no` on `vehicle` and `violation_ticket` frequently. Add indexes:
 
-#### Drivers Module
-
-**File: `src/components/drivers/DriverList.jsx`**
-```javascript
-import { useState, useEffect } from 'react';
-import { driverService } from '../../services/driverService';
-import Button from '../common/Button';
-
-export default function DriverList() {
-  const [drivers, setDrivers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetchDrivers();
-  }, []);
-
-  const fetchDrivers = async () => {
-    try {
-      setLoading(true);
-      const response = await driverService.getAll();
-      setDrivers(response.data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p className="text-red-600">Error: {error}</p>;
-
-  return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Drivers</h2>
-        <Button>Add Driver</Button>
-      </div>
-      
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse border border-gray-300">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border p-2">ID</th>
-              <th className="border p-2">Name</th>
-              <th className="border p-2">License</th>
-              <th className="border p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {drivers.map((driver) => (
-              <tr key={driver.id} className="hover:bg-gray-50">
-                <td className="border p-2">{driver.id}</td>
-                <td className="border p-2">{driver.name}</td>
-                <td className="border p-2">{driver.license}</td>
-                <td className="border p-2">
-                  <Button variant="secondary" className="text-sm">Edit</Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
+```sql
+-- Add to schema.sql after table definitions:
+CREATE INDEX idx_vehicle_license    ON vehicle (license_no);
+CREATE INDEX idx_ticket_license     ON violation_ticket (license_no);
+CREATE INDEX idx_ticket_date        ON violation_ticket (date);
+CREATE INDEX idx_registration_exp   ON vehicle_registration (expiration_date);
 ```
 
-Repeat similar structure for: Vehicles, Tickets, Reports
+### 2.4 Align the Milestone SQL File
 
----
+`delacruz_odon_reyes_milestone.sql` is a compiled copy but it is out of sync with `schema.sql` (missing indexes, different types). After all schema fixes, regenerate this file by concatenating:
 
-### Step 9: Create Pages and Routing
-**Goal**: Set up application navigation
-
-**File: `src/App.jsx`**
-```javascript
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './components/layout/Header';
-import Sidebar from './components/layout/Sidebar';
-import Dashboard from './pages/Dashboard';
-import DriversPage from './pages/DriversPage';
-import VehiclesPage from './pages/VehiclesPage';
-import TicketsPage from './pages/TicketsPage';
-import ReportsPage from './pages/ReportsPage';
-
-export default function App() {
-  return (
-    <Router>
-      <div className="flex flex-col min-h-screen">
-        <Header />
-        <div className="flex flex-1">
-          <Sidebar />
-          <main className="flex-1 bg-gray-50">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/drivers" element={<DriversPage />} />
-              <Route path="/vehicles" element={<VehiclesPage />} />
-              <Route path="/tickets" element={<TicketsPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-            </Routes>
-          </main>
-        </div>
-      </div>
-    </Router>
-  );
-}
+```
+setup.sql + schema.sql + data.sql + views.sql + queries.sql
 ```
 
 ---
 
-### Step 10: Implement CRUD Operations
-**Goal**: Full Create, Read, Update, Delete functionality
+## 3. CRUD Operation Fixes
 
-**File: `src/components/drivers/DriverForm.jsx`**
-```javascript
-import { useState } from 'react';
-import { driverService } from '../../services/driverService';
-import Button from '../common/Button';
-import Input from '../common/Input';
+### 3.1 Driver — Display Full Name in getAllDrivers
 
-export default function DriverForm({ onSuccess, initialData = null }) {
-  const [formData, setFormData] = useState(initialData || {
-    name: '',
-    license: '',
-    email: '',
+`driverQueries.selectAll` returns raw columns. The frontend tries to display `d.full_name` but no such column exists. Fix the query:
+
+```js
+// backend/sql/jsQueries/driverQueries.js
+selectAll: `
+  SELECT *,
+    CONCAT(fname, ' ', COALESCE(mname, ''), ' ', lname) AS full_name
+  FROM driver
+`,
+selectByLicense: `
+  SELECT *,
+    CONCAT(fname, ' ', COALESCE(mname, ''), ' ', lname) AS full_name
+  FROM driver WHERE license_no = ?
+`,
+```
+
+### 3.2 Vehicle — Return Owner Name in selectAll
+
+The frontend displays `v.owner_name` but the vehicle query does not join the driver table:
+
+```js
+// backend/sql/jsQueries/vehicleQueries.js
+selectAll: `
+  SELECT v.*,
+    CONCAT(d.fname, ' ', d.lname) AS owner_name
+  FROM vehicle v
+  LEFT JOIN driver d ON v.license_no = d.license_no
+`,
+selectByPlate: `
+  SELECT v.*,
+    CONCAT(d.fname, ' ', d.lname) AS owner_name
+  FROM vehicle v
+  LEFT JOIN driver d ON v.license_no = d.license_no
+  WHERE v.plate_no = ?
+`,
+```
+
+### 3.3 Ticket — Return Driver Name and Plate in selectAll
+
+The frontend `Violations.jsx` displays `v.driver_name`, `v.plate_number`, `v.violation_type`, and `v.date_of_violation` — none of which are returned by the current `selectAll`:
+
+```js
+// backend/sql/jsQueries/ticketQueries.js
+selectAll: `
+  SELECT
+    vt.*,
+    vt.date                                        AS date_of_violation,
+    vt.plate_no                                    AS plate_number,
+    CONCAT(d.fname, ' ', d.lname)                  AS driver_name,
+    GROUP_CONCAT(v.violation_name SEPARATOR ', ')  AS violation_type,
+    SUM(v.fine_amount)                             AS fine_amount
+  FROM violation_ticket vt
+  LEFT JOIN driver d    ON vt.license_no = d.license_no
+  LEFT JOIN violation v ON vt.ticket_id  = v.ticket_id
+  GROUP BY vt.ticket_id
+`,
+```
+
+### 3.4 Registration — Return plate_number Alias
+
+The frontend displays `r.plate_number` but the query returns `plate_no`. Add an alias in `registrationQueries.js`:
+
+```js
+// In selectAll and selectByNumber, add:
+vr.plate_no AS plate_number,
+```
+
+### 3.5 Vehicle Delete — Improve FK Error Message
+
+Currently `vehicleController.deleteVehicle` deletes registrations first but hits a FK error if violation tickets exist. Make the message actionable:
+
+```js
+// backend/controllers/vehicleController.js — deleteVehicle catch block
+if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+  return res.status(409).json({
+    success: false,
+    message: 'Cannot delete vehicle: it has associated violation tickets. Remove the tickets first.'
   });
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+}
+```
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+---
+
+## 4. Edge Case Handling
+
+### 4.1 Add Required Field Validation in Controllers
+
+Currently missing required field checks. Add guard clauses at the top of each create handler:
+
+```js
+// backend/controllers/driverController.js — createDriver
+const { license_no, fname, lname, bday, sex } = req.body;
+if (!license_no || !fname || !lname || !bday || !sex) {
+  return res.status(400).json({
+    success: false,
+    message: 'Missing required fields: license_no, fname, lname, bday, sex'
+  });
+}
+
+// backend/controllers/vehicleController.js — createVehicle
+const { plate_no, engine_no, chassis_no, license_no } = req.body;
+if (!plate_no || !engine_no || !chassis_no || !license_no) {
+  return res.status(400).json({
+    success: false,
+    message: 'Missing required fields: plate_no, engine_no, chassis_no, license_no'
+  });
+}
+
+// backend/controllers/ticketController.js — createTicket
+const { location, date, license_no, plate_no, violations } = req.body;
+if (!location || !date || !license_no || !plate_no) {
+  return res.status(400).json({
+    success: false,
+    message: 'Missing required fields: location, date, license_no, plate_no'
+  });
+}
+if (!violations || !Array.isArray(violations) || violations.length === 0) {
+  return res.status(400).json({
+    success: false,
+    message: 'At least one violation must be provided in the violations array'
+  });
+}
+```
+
+### 4.2 Document the Wipe-and-Replace Behavior
+
+When updating a driver, if `conditions`, `license_codes`, or `addresses` are sent as empty arrays `[]`, all existing records for that field are deleted. Add a comment so future developers understand this is intentional:
+
+```js
+// backend/controllers/driverController.js — updateDriver
+// Note: sending conditions: [] will CLEAR all conditions for this driver.
+// To leave conditions unchanged, omit the field entirely from the request body.
+if (conditions && Array.isArray(conditions)) { ... }
+```
+
+### 4.3 Prevent Changing Primary Key on Update
+
+Add a guard in `vehicleController.updateVehicle` to reject attempts to change `plate_no`:
+
+```js
+// backend/controllers/vehicleController.js — updateVehicle
+if (req.body.plate_no && req.body.plate_no !== plate_no) {
+  return res.status(400).json({
+    success: false,
+    message: 'Plate number (primary key) cannot be changed. Delete and re-create the vehicle instead.'
+  });
+}
+```
+
+---
+
+## 5. Reports Fixes
+
+### 5.1 Report 1 — Move Query Builder to reportQueries.js
+
+`reportController.js` builds raw SQL via string concatenation. Move the builder into `reportQueries.js` to keep controllers thin:
+
+```js
+// backend/sql/jsQueries/reportQueries.js
+buildFilteredDriversQuery: (filters) => {
+  const conditions = ['1 = 1'];
+  const params = [];
+  if (filters.license_type)  { conditions.push('license_type = ?');  params.push(filters.license_type); }
+  if (filters.license_status){ conditions.push('license_status = ?'); params.push(filters.license_status); }
+  if (filters.sex)           { conditions.push('sex = ?');            params.push(filters.sex); }
+  if (filters.age_min)       { conditions.push('age >= ?');           params.push(parseInt(filters.age_min)); }
+  if (filters.age_max)       { conditions.push('age <= ?');           params.push(parseInt(filters.age_max)); }
+  return {
+    sql: `SELECT * FROM vw_driver_info WHERE ${conditions.join(' AND ')}`,
+    params
   };
+},
+```
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      if (initialData?.id) {
-        await driverService.update(initialData.id, formData);
-      } else {
-        await driverService.create(formData);
-      }
-      onSuccess?.();
-    } catch (error) {
-      setErrors({ submit: error.message });
-    } finally {
-      setLoading(false);
-    }
-  };
+Then in the controller:
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
-        label="Name"
-        name="name"
-        value={formData.name}
-        onChange={handleChange}
-        error={errors.name}
-        required
-      />
-      <Input
-        label="License Number"
-        name="license"
-        value={formData.license}
-        onChange={handleChange}
-        error={errors.license}
-        required
-      />
-      <Input
-        label="Email"
-        name="email"
-        type="email"
-        value={formData.email}
-        onChange={handleChange}
-        error={errors.email}
-      />
-      {errors.submit && <p className="text-red-600">{errors.submit}</p>}
-      <Button type="submit" disabled={loading}>
-        {loading ? 'Saving...' : 'Save'}
-      </Button>
-    </form>
-  );
-}
+```js
+const { sql, params } = reportQueries.buildFilteredDriversQuery(req.query);
+const [rows] = await pool.query(sql, params);
+```
+
+### 5.2 Report 4 — Fix Route Ordering to Prevent Conflicts
+
+The route `/reports/drivers/expired-licenses` may be shadowed by `/reports/drivers/:license_no` depending on Express route registration order. Fix `reportRoutes.js` so specific routes appear before parameterized ones:
+
+```js
+// backend/routes/reportRoutes.js
+router.get('/reports/drivers',                    getFilteredDrivers);
+router.get('/reports/drivers/expired-licenses',   getDriversByLicenseStatus);   // before :license_no
+router.get('/reports/violations/driver/:license_no', getDriverViolationsByDate);
+router.get('/reports/vehicles/driver/:license_no',   getVehiclesByDriver);
+router.get('/reports/registrations/expired',      getExpiredRegistrations);
+router.get('/reports/violations/by-type',         getViolationSummaryByYear);
+router.get('/reports/vehicles/violations',        getViolationsByLocation);
+```
+
+### 5.3 Report 3 — Expand vw_vehicle_registrations Columns
+
+The current view only shows `plate_no, make, model, expiration_date`. Update `views.sql` to include the owner and registration number:
+
+```sql
+CREATE OR REPLACE VIEW vw_vehicle_registrations AS
+SELECT
+    vr.registration_no,
+    v.plate_no,
+    v.make,
+    v.model,
+    v.year,
+    v.vehicle_type,
+    v.color,
+    CONCAT(d.fname, ' ', d.lname) AS owner_name,
+    vr.registration_date,
+    vr.expiration_date
+FROM vehicle v
+JOIN vehicle_registration vr
+    ON  v.plate_no   = vr.plate_no
+    AND v.engine_no  = vr.engine_no
+    AND v.chassis_no = vr.chassis_no
+JOIN driver d ON v.license_no = d.license_no;
+```
+
+### 5.4 Report 5 — Enrich vw_violation_history
+
+Add driver name and violation status to make the report more useful:
+
+```sql
+-- views.sql
+CREATE OR REPLACE VIEW vw_violation_history AS
+SELECT
+    vt.license_no,
+    CONCAT(d.fname, ' ', d.lname) AS driver_name,
+    vt.ticket_id,
+    vt.date         AS violation_date,
+    vt.location,
+    vt.violation_status,
+    vt.apprehending_officer,
+    v.violation_name,
+    v.fine_amount
+FROM violation_ticket vt
+JOIN violation v ON vt.ticket_id  = v.ticket_id
+JOIN driver    d ON vt.license_no = d.license_no;
 ```
 
 ---
 
-### Step 11: Add Search & Filter
-**Goal**: Implement data filtering and search
+## 6. Code Quality Improvements
 
-**File: `src/components/common/SearchBar.jsx`**
-```javascript
-export default function SearchBar({ onSearch, placeholder = 'Search...' }) {
-  return (
-    <input
-      type="text"
-      placeholder={placeholder}
-      onChange={(e) => onSearch(e.target.value)}
-      className="w-full px-4 py-2 border border-gray-300 rounded"
-    />
-  );
-}
+### 6.1 Remove Duplicate Route Registrations
+
+`backend/routes/router.js` registers each route twice, which is unnecessary:
+
+```js
+// CURRENT (redundant lines — remove the second entry for each)
+app.use('/api/drivers', driverRoutes);
+app.use('/api/drivers/drivers', driverRoutes);   // remove
+
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/vehicles/vehicles', vehicleRoutes); // remove
+
+app.use('/api/tickets', ticketRoutes);
+app.use('/api/tickets/tickets', ticketRoutes);    // remove
+
+app.use('/api/registrations', registrationRoutes);
+app.use('/api/registrations/registrations', registrationRoutes); // remove
+
+// FIXED
+export default (app) => {
+  app.use('/api/drivers',       driverRoutes);
+  app.use('/api/vehicles',      vehicleRoutes);
+  app.use('/api/tickets',       ticketRoutes);
+  app.use('/api/registrations', registrationRoutes);
+  app.use('/api',               reportRoutes);
+};
 ```
 
-Update list components to use search functionality
+### 6.2 Add a Centralized Error Handler
 
----
+Instead of repeating `res.status(500).json(...)` in every controller, register a global error middleware in `server.js`:
 
-### Step 12: Add Error Handling & Loading States
-**Goal**: Improve user experience
-
-**File: `src/components/common/Alert.jsx`**
-```javascript
-export default function Alert({ type = 'info', message, onClose }) {
-  const colors = {
-    success: 'bg-green-100 text-green-800',
-    error: 'bg-red-100 text-red-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    info: 'bg-blue-100 text-blue-800',
-  };
-
-  return (
-    <div className={`${colors[type]} p-4 rounded mb-4 flex justify-between`}>
-      <span>{message}</span>
-      <button onClick={onClose}>×</button>
-    </div>
-  );
-}
+```js
+// backend/server.js — add AFTER routes(app)
+app.use((err, req, res, next) => {
+  console.error('[Unhandled Error]', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: err.message
+  });
+});
 ```
 
-**File: `src/components/common/Loading.jsx`**
-```javascript
-export default function Loading() {
-  return (
-    <div className="flex justify-center items-center p-8">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-    </div>
-  );
-}
+### 6.3 Add an API Health Check Route
+
+Useful for verifying the server is up during demos:
+
+```js
+// backend/routes/router.js
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, message: 'LTO API is running', timestamp: new Date() });
+});
+```
+
+### 6.4 Expand the Terminal Menu to All 7 Reports
+
+`terminal/main.py` only implements 4 of the 7 required reports. Expand `ui.py` and `main.py`:
+
+```python
+# terminal/ui.py — update print_menu()
+def print_menu():
+    print("\nMAIN MENU — REPORTS")
+    print("  [1]  View All Registered Drivers")
+    print("  [2]  Filter Drivers by Type / Status / Age / Sex")
+    print("  [3]  Vehicles Owned by a Driver")
+    print("  [4]  Vehicles with Expired Registrations as of Date")
+    print("  [5]  Drivers with Expired or Suspended Licenses")
+    print("  [6]  Violations by Driver within Date Range")
+    print("  [7]  Total Violations per Type for a Given Year")
+    print("  [8]  Vehicles Involved in Violations by City")
+    print("  [9]  Exit Application")
+    print("=" * 100)
+```
+
+Add the corresponding `elif` blocks in `main.py` using the SQL already defined in `queries.sql`.
+
+### 6.5 Consistent SQL Formatting in jsQueries
+
+All queries should follow the same style: keywords uppercase, clauses on separate lines, backtick-quoted reserved words:
+
+```js
+// BEFORE (inconsistent)
+selectAll: 'SELECT * FROM violation_ticket',
+
+// AFTER (consistent)
+selectAll: `
+  SELECT *
+  FROM violation_ticket
+  ORDER BY \`date\` DESC
+`,
 ```
 
 ---
 
-### Step 13: Styling & Theming
-**Goal**: Apply consistent Tailwind CSS styling
+## 7. Quick Reference: Field Name Mapping
 
-**File: `tailwind.config.js`**
-```javascript
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,jsx}",
-  ],
-  theme: {
-    extend: {
-      colors: {
-        primary: '#2563eb',
-        secondary: '#64748b',
-      },
-    },
-  },
-  plugins: [],
-}
+Use this table when fixing the frontend forms. Left = what the frontend currently sends. Right = what the backend expects.
+
+### Driver
+
+| Frontend (wrong)          | Backend (correct)                              |
+|---------------------------|------------------------------------------------|
+| `full_name`               | `fname` + `lname` + `mname` (separate fields) |
+| `license_number`          | `license_no`                                   |
+| `date_of_birth`           | `bday`                                         |
+| `issue_date`              | `issued_date`                                  |
+| `expiration_date`         | `expiry_date`                                  |
+| `address` (single string) | `addresses` (array of strings)                 |
+
+### Vehicle
+
+| Frontend (wrong) | Backend (correct) |
+|-----------------|-------------------|
+| `plate_number`  | `plate_no`        |
+| `engine_number` | `engine_no`       |
+| `chassis_number`| `chassis_no`      |
+| `driver_id`     | `license_no`      |
+
+### Registration
+
+| Frontend (wrong)      | Backend (correct)        |
+|-----------------------|--------------------------|
+| `vehicle_id`          | `plate_no`               |
+| `registration_number` | `registration_number` ✅ |
+
+### Violation (Ticket)
+
+| Frontend (wrong)              | Backend (correct)                              |
+|-------------------------------|------------------------------------------------|
+| `violation_type` (string)     | `violations: [{ violation_name, fine_amount }]` (array) |
+| `date_of_violation`           | `date`                                         |
+| `driver_id`                   | `license_no`                                   |
+| `vehicle_id`                  | `plate_no` + `engine_no` + `chassis_no`        |
+| `fine_amount` (top-level)     | inside `violations[]` array                    |
+
+---
+
+## Priority Order for Implementation
+
+```
+[P0 — Breaks grading if tested via UI]
+  1.1  Fix all frontend ↔ backend field name mismatches
+  1.2  Fix status value casing (Active vs active)
+
+[P1 — Loses CRUD points]
+  3.1  Add full_name alias to driver selectAll
+  3.2  Add owner_name join to vehicle selectAll
+  3.3  Add driver_name + violation_type to ticket selectAll
+  3.4  Add plate_number alias to registration selectAll
+
+[P2 — Loses report points]
+  5.3  Expand vw_vehicle_registrations columns
+  5.4  Enrich vw_violation_history with driver_name
+  5.2  Fix route ordering for report 4
+
+[P3 — Loses edge case / code quality points]
+  4.1  Add required field validation in controllers
+  6.1  Remove duplicate route registrations
+  6.4  Expand terminal menu to all 7 reports
+
+[P4 — Nice to have / bonus robustness]
+  2.1  Add CHECK constraints to schema
+  2.3  Add database indexes
+  6.2  Add centralized error handler
+  6.3  Add health check route
 ```
 
 ---
 
-### Step 14: Testing
-**Goal**: Verify all functionality works
-
-- [ ] Test create operations for all entities
-- [ ] Test read/list operations
-- [ ] Test update operations
-- [ ] Test delete operations
-- [ ] Test error handling
-- [ ] Test form validation
-- [ ] Test responsive design on mobile/tablet
-- [ ] Test API error scenarios
-- [ ] Test loading states
-
----
-
-### Step 15: Deployment
-**Goal**: Deploy frontend to production
-
-1. Build production version:
-   ```bash
-   npm run build
-   ```
-
-2. Deploy to hosting:
-   - Vercel
-   - Netlify
-   - AWS S3 + CloudFront
-   - GitHub Pages
-   - Or your preferred platform
-
-3. Update `.env` with production API URL
-
----
-
-## Additional Resources
-
-### Tailwind CSS
-- [Official Documentation](https://tailwindcss.com/docs)
-- [Component Library](https://tailwindui.com/)
-
-### React
-- [React Documentation](https://react.dev/)
-- [React Router](https://reactrouter.com/)
-
-### Axios
-- [Axios Documentation](https://axios-http.com/)
-
-### State Management Options
-- Zustand
-- Redux
-- Context API
-- Recoil
-
----
-
-## Notes
-- Ensure backend API is running before testing frontend
-- Use `.env` files to manage API URLs
-- Consider implementing JWT authentication if needed
-- Add logging and monitoring for production
+*End of GUIDE.md — Last updated for CMSC 127 AY 2025–2026 Final Submission*
