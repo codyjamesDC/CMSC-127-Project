@@ -272,15 +272,15 @@ export default function Drivers() {
   const FormFields = () => (
     <div className="form-grid">
       <div className="form-group full">
-        <label className="form-label">License Number *</label>
+        <label className="form-label">License Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" name="license_no" value={form.license_no} onChange={handleChange} placeholder="N01-23-456789" disabled={modal === 'edit'} />
       </div>
       <div className="form-group">
-        <label className="form-label">First Name *</label>
+        <label className="form-label">First Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" name="fname" value={form.fname} onChange={handleChange} placeholder="Juan" />
       </div>
       <div className="form-group">
-        <label className="form-label">Last Name *</label>
+        <label className="form-label">Last Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" name="lname" value={form.lname} onChange={handleChange} placeholder="Dela Cruz" />
       </div>
       <div className="form-group">
@@ -288,54 +288,54 @@ export default function Drivers() {
         <input className="form-control" name="mname" value={form.mname} onChange={handleChange} placeholder="Santos" />
       </div>
       <div className="form-group">
-        <label className="form-label">Date of Birth *</label>
+        <label className="form-label">Date of Birth <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" type="date" name="bday"
           value={form.bday?.split('T')[0] ?? ''}
           max={new Date().toISOString().split('T')[0]}
           onChange={handleChange} />
       </div>
       <div className="form-group">
-        <label className="form-label">Sex</label>
+        <label className="form-label">Sex <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <select className="form-control" name="sex" value={form.sex} onChange={handleChange}>
           {SEXES.map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
       <div className="form-group">
-        <label className="form-label">Contact No.</label>
+        <label className="form-label">Contact No. <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" name="contact_no" value={form.contact_no} onChange={handleChange} placeholder="09171234567" />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Nationality *</label>
+        <label className="form-label">Nationality <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" name="nationality" value={form.nationality} onChange={handleChange} placeholder="Filipino" />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Height (cm) *</label>
+        <label className="form-label">Height (cm) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" type="number" step="0.01" min="0" name="height_cm" value={form.height_cm} onChange={handleChange} placeholder="170" />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Weight (kg) *</label>
+        <label className="form-label">Weight (kg) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" type="number" step="0.01" min="0" name="weight_kg" value={form.weight_kg} onChange={handleChange} placeholder="65" />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Eye Color *</label>
+        <label className="form-label">Eye Color <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <select className="form-control" name="eye_color" value={form.eye_color} onChange={handleChange}>
           {EYE_COLORS.map(color => <option key={color}>{color}</option>)}
         </select>
       </div>
 
       <div className="form-group">
-        <label className="form-label">Blood Type *</label>
+        <label className="form-label">Blood Type <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <select className="form-control" name="blood_type" value={form.blood_type} onChange={handleChange}>
           {BLOOD_TYPES.map(type => <option key={type}>{type}</option>)}
         </select>
       </div>
 
       <div className="form-group full">
-      <label className="form-label">Mother's Name</label>
+      <label className="form-label">Mother's Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <div style={{ display: 'flex', gap: 8 }}>
           <input className="form-control" style={{ flex: 1 }} name="mother_fname" value={form.mother_fname} onChange={handleChange} placeholder="Mother First" />
           <input className="form-control" style={{ flex: 1 }} name="mother_mname" value={form.mother_mname} onChange={handleChange} placeholder="Mother Middle" />
@@ -344,7 +344,7 @@ export default function Drivers() {
       </div>
 
       <div className="form-group full">
-      <label className="form-label">Father's Name</label>
+      <label className="form-label">Father's Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <div style={{ display: 'flex', gap: 8 }}>
           <input className="form-control" style={{ flex: 1 }} name="father_fname" value={form.father_fname} onChange={handleChange} placeholder="Father First" />
           <input className="form-control" style={{ flex: 1 }} name="father_mname" value={form.father_mname} onChange={handleChange} placeholder="Father Middle" />
@@ -353,12 +353,12 @@ export default function Drivers() {
       </div>
 
       <div className="form-group">
-        <label className="form-label">Emergency Contact Person *</label>
+        <label className="form-label">Emergency Contact Person <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" name="emrg_contact_person" value={form.emrg_contact_person} onChange={handleChange} placeholder="Full name" />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Emergency Contact No. *</label>
+        <label className="form-label">Emergency Contact No. <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" name="emrg_contact_no" value={form.emrg_contact_no} onChange={handleChange} placeholder="09171234567" />
       </div>
 
