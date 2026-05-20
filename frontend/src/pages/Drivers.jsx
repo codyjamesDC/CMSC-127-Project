@@ -1,3 +1,4 @@
+// src/pages/Drivers.jsx
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { driversApi } from '../api/client';
@@ -141,14 +142,73 @@ export default function Drivers() {
   };
 
   const handleRenew = () => {
+    const bdayStr = form.bday?.split('T')[0];
+    const expiryStr = form.expiry_date?.split('T')[0];
+
+    if (!expiryStr) {
+      alert("Cannot renew: Current expiration date is missing.");
+      return;
+    }
+    if (!bdayStr) {
+      alert("Cannot renew: Date of Birth is required to calculate the new expiration date.");
+      return;
+    }
+
     const today = new Date();
-    today.setFullYear(today.getFullYear() + 5);
-    const newExpiry = today.toISOString().split('T')[0];
+    today.setHours(0, 0, 0, 0);
+
+    const [expYear, expMonth, expDay] = expiryStr.split('-').map(Number);
+    const expiryDate = new Date(expYear, expMonth - 1, expDay);
+
+    // Rule 1: Calculate difference in days for the 60-day early renewal limit
+    const diffTime = expiryDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 60) {
+      alert(`Renewal is not allowed yet. You can only renew within 60 days of your expiration date.\nYour license still has ${diffDays} days before expiration.`);
+      return;
+    }
+
+    // Rule 2: Expired for more than 10 years limit
+    const tenYearsAgo = new Date(today);
+    tenYearsAgo.setFullYear(today.getFullYear() - 10);
+
+    if (expiryDate < tenYearsAgo) {
+      alert("Renewal is not allowed. Your license has been expired for more than 10 years.");
+      return;
+    }
+
+    // Rule 3: Calculate the correct expiration year based on current year and birthday
+    const [bYear, bMonth, bDay] = bdayStr.split('-').map(Number);
+    const thisYearsBday = new Date(today.getFullYear(), bMonth - 1, bDay);
+
+    let expireYear;
+    if (today <= thisYearsBday) {
+      // If birthday hasn't passed yet this year (or is today), it counts as year 1
+      expireYear = today.getFullYear() + 4;
+    } else {
+      // If birthday already passed this year
+      expireYear = today.getFullYear() + 5;
+    }
+
+    const newExpiryDate = new Date(expireYear, bMonth - 1, bDay);
+
+    // Formats dates back to 'YYYY-MM-DD' for inputs
+    const formatLocalYYYYMMDD = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
     setForm(f => ({
       ...f,
-      expiry_date: newExpiry,
+      issued_date: formatLocalYYYYMMDD(today),
+      expiry_date: formatLocalYYYYMMDD(newExpiryDate),
       license_status: 'Active'
     }));
+
+    alert(`License renewal applied!\nNew issue date: ${formatLocalYYYYMMDD(today)}\nNew expiration date: ${formatLocalYYYYMMDD(newExpiryDate)}\n\nPlease click 'Save Driver' to confirm changes.`);
   };
 
   const handleSave = async () => {
