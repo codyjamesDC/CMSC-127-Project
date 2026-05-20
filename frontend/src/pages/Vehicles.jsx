@@ -1,28 +1,32 @@
+// frontend/src/pages/Vehicles.jsx
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { vehiclesApi, driversApi } from '../api/client';
 
 const VEHICLE_TYPES = ['Motorcycle', 'Sedan', 'Hatchback', 'SUV', 'Van', 'Truck', 'Bus'];
-const OWNERSHIP_TYPES = ['Private', 'For Hire']; // New dropdown options
-const emptyForm = { 
-  plate_number: '', 
-  engine_number: '', 
-  chassis_number: '', 
-  vehicle_type: 'Sedan', 
-  ownership: 'Private Car', // Default value
-  make: '', 
-  model: '', 
-  year: '', 
-  color: '', 
-  license_no: '' 
+const OWNERSHIP_TYPES = ['Private', 'For Hire'];
+
+// P0 1.1 FIX: emptyForm uses backend field names (plate_no, engine_no, chassis_no, license_no)
+const emptyForm = {
+  plate_no: '',
+  engine_no: '',
+  chassis_no: '',
+  vehicle_type: 'Sedan',
+  ownership: 'Private',
+  make: '',
+  model: '',
+  year: '',
+  color: '',
+  license_no: '',
 };
 
-// 1. Define this OUTSIDE the Vehicles function at the top of the file
+// Defined outside component to prevent focus loss on re-render
 const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPES }) => (
   <div className="form-grid">
     <div className="form-group">
       <label className="form-label">Plate Number *</label>
-      <input className="form-control" name="plate_number" value={form.plate_number} onChange={handleChange} placeholder="AAA1234" />
+      {/* P0 1.1 FIX: name="plate_no" (was plate_number) */}
+      <input className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange} placeholder="AAA1234" />
     </div>
     <div className="form-group">
       <label className="form-label">Vehicle Type</label>
@@ -32,11 +36,13 @@ const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPE
     </div>
     <div className="form-group">
       <label className="form-label">Engine Number</label>
-      <input className="form-control" name="engine_number" value={form.engine_number} onChange={handleChange} placeholder="ENGINE123" />
+      {/* P0 1.1 FIX: name="engine_no" (was engine_number) */}
+      <input className="form-control" name="engine_no" value={form.engine_no} onChange={handleChange} placeholder="ENGINE123" />
     </div>
     <div className="form-group">
       <label className="form-label">Chassis Number</label>
-      <input className="form-control" name="chassis_number" value={form.chassis_number} onChange={handleChange} placeholder="CHASSIS123" />
+      {/* P0 1.1 FIX: name="chassis_no" (was chassis_number) */}
+      <input className="form-control" name="chassis_no" value={form.chassis_no} onChange={handleChange} placeholder="CHASSIS123" />
     </div>
     <div className="form-group">
       <label className="form-label">Ownership Type</label>
@@ -62,9 +68,14 @@ const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPE
     </div>
     <div className="form-group full">
       <label className="form-label">Registered Owner (Driver)</label>
+      {/* P0 1.1 FIX: name="license_no" (was driver_id) */}
       <select className="form-control" name="license_no" value={form.license_no ?? ''} onChange={handleChange}>
         <option value="">— Select Owner —</option>
-        {drivers.map(d => <option key={d.license_no} value={d.license_no}>{d.full_name} · {d.license_no}</option>)}
+        {drivers.map(d => (
+          <option key={d.license_no} value={d.license_no}>
+            {d.full_name} · {d.license_no}
+          </option>
+        ))}
       </select>
     </div>
   </div>
@@ -77,73 +88,90 @@ export default function Vehicles() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [filterOwnership, setFilterOwnership] = useState('');
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
-  const [filterOwnership, setFilterOwnership] = useState(''); // New state for ownership filter
 
   const load = async () => {
-  setLoading(true);
-  try {
-    const [vRes, dRes] = await Promise.all([
-      // Pass both filters to the API
-      vehiclesApi.getAll({ 
-        vehicle_type: filterType, 
-        ownership: filterOwnership 
-      }), 
-      driversApi.getAll()
-    ]);
-    
-    const rawVehicles = Array.isArray(vRes.data) ? vRes.data : vRes.data?.data ?? [];
-    const rawDrivers = Array.isArray(dRes.data) ? dRes.data : dRes.data?.data ?? [];
+    setLoading(true);
+    try {
+      const [vRes, dRes] = await Promise.all([
+        vehiclesApi.getAll({ vehicle_type: filterType, ownership: filterOwnership }),
+        driversApi.getAll(),
+      ]);
 
-    const mappedVehicles = rawVehicles.map(v => ({
-      ...v,
-      plate_number: v.plate_no,
-      engine_number: v.engine_no,
-      chassis_number: v.chassis_no,
-      // Uses the owner_name from the SQL JOIN or finds it in the local list
-      owner_name: v.owner_name ?? rawDrivers.find(d => d.license_no === v.license_no)?.full_name ?? v.license_no
-    }));
+      const rawVehicles = Array.isArray(vRes.data) ? vRes.data : vRes.data?.data ?? [];
+      const rawDrivers = Array.isArray(dRes.data) ? dRes.data : dRes.data?.data ?? [];
 
-    setVehicles(mappedVehicles);
-    setDrivers(rawDrivers);
-  } catch { 
-    setError('Failed to load vehicles.'); 
-  }
-  setLoading(false);
-};
+      const mappedDrivers = rawDrivers.map(d => ({
+        ...d,
+        full_name: [d.fname, d.mname, d.lname].filter(Boolean).join(' '),
+      }));
+
+      const mappedVehicles = rawVehicles.map(v => ({
+        ...v,
+        // owner_name comes from the JOIN in vehicleQueries.selectAll; fallback to local lookup
+        owner_name: v.owner_name ?? mappedDrivers.find(d => d.license_no === v.license_no)?.full_name ?? v.license_no,
+      }));
+
+      setVehicles(mappedVehicles);
+      setDrivers(mappedDrivers);
+    } catch {
+      setError('Failed to load vehicles.');
+    }
+    setLoading(false);
+  };
 
   useEffect(() => { load(); }, [filterType, filterOwnership]);
 
   const filtered = vehicles.filter(v =>
-    [v.plate_number, v.make, v.model, v.color, v.owner_name].some(f => f?.toLowerCase().includes(search.toLowerCase()))
+    [v.plate_no, v.make, v.model, v.color, v.owner_name].some(f =>
+      f?.toLowerCase().includes(search.toLowerCase())
+    )
   );
 
   const openAdd = () => { setForm(emptyForm); setModal('add'); setMsg(''); };
-  const openEdit = (v) => { setForm({ ...v, license_no: v.license_no ?? '' }); setSelected(v); setModal('edit'); setMsg(''); };
+
+  const openEdit = (v) => {
+    // P0 1.1 FIX: spread v directly — fields are already backend-named (plate_no, engine_no, etc.)
+    setForm({
+      plate_no: v.plate_no ?? '',
+      engine_no: v.engine_no ?? '',
+      chassis_no: v.chassis_no ?? '',
+      vehicle_type: v.vehicle_type ?? 'Sedan',
+      ownership: v.ownership ?? 'Private',
+      make: v.make ?? '',
+      model: v.model ?? '',
+      year: v.year ?? '',
+      color: v.color ?? '',
+      license_no: v.license_no ?? '',
+    });
+    setSelected(v);
+    setModal('edit');
+    setMsg('');
+  };
+
   const openView = (v) => { setSelected(v); setModal('view'); };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const payload = {
-        ...form,
-        plate_no: form.plate_number,   // Map to backend name
-        engine_no: form.engine_number,
-        chassis_no: form.chassis_number,
-        ownership: form.ownership      // Ensure ownership is sent
-      };
+      // P0 1.1 FIX: payload already uses correct backend field names — no remapping needed
+      const payload = { ...form };
 
-      if (modal === 'add') await vehiclesApi.create(payload);
-      else await vehiclesApi.update(selected.plate_no, payload);
-      
+      if (modal === 'add') {
+        await vehiclesApi.create(payload);
+      } else {
+        await vehiclesApi.update(selected.plate_no, payload);
+      }
+
       await load();
       setTimeout(() => { setModal(null); setMsg(''); }, 600);
-    } catch (e) { 
-      setMsg('Error: ' + (e.response?.data?.message ?? e.message)); 
+    } catch (e) {
+      setMsg('Error: ' + (e.response?.data?.message ?? e.message));
     }
     setSaving(false);
   };
@@ -173,7 +201,6 @@ export default function Vehicles() {
             <option value="">All Types</option>
             {VEHICLE_TYPES.map(t => <option key={t}>{t}</option>)}
           </select>
-          {/* New Ownership Filter Dropdown */}
           <select className="filter-select" value={filterOwnership} onChange={e => setFilterOwnership(e.target.value)}>
             <option value="">All Ownerships</option>
             {OWNERSHIP_TYPES.map(o => <option key={o}>{o}</option>)}
@@ -197,12 +224,13 @@ export default function Vehicles() {
                 {filtered.map((v, i) => (
                   <tr key={v.plate_no ?? i}>
                     <td style={{ color: 'var(--lto-text-muted)', fontWeight: 600 }}>{i + 1}</td>
-                    <td><span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--lto-blue)', fontSize: 13 }}>{v.plate_number}</span></td>
+                    {/* P0 1.1 FIX: use v.plate_no (backend field, was v.plate_number) */}
+                    <td><span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--lto-blue)', fontSize: 13 }}>{v.plate_no}</span></td>
                     <td><span style={{ fontSize: 12, background: 'rgba(0,48,135,0.08)', color: 'var(--lto-blue)', padding: '2px 8px', borderRadius: 4 }}>{v.vehicle_type}</span></td>
                     <td style={{ fontWeight: 500 }}>{v.make} {v.model}</td>
                     <td>{v.year}</td>
                     <td>{v.color}</td>
-                    <td style={{ fontSize: 12, color: 'var(--lto-text-muted)' }}>{v.owner_name ?? v.full_name ?? v.license_no ?? '—'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--lto-text-muted)' }}>{v.owner_name ?? '—'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn btn-secondary btn-sm" onClick={() => openView(v)}>View</button>
@@ -219,20 +247,21 @@ export default function Vehicles() {
       </div>
 
       {(modal === 'add' || modal === 'edit') && (
-        <Modal 
-          title={modal === 'add' ? '🚗 Register Vehicle' : '✏️ Edit Vehicle'} 
+        <Modal
+          title={modal === 'add' ? '🚗 Register Vehicle' : '✏️ Edit Vehicle'}
           onClose={() => setModal(null)}
           footer={<>
             {msg && <span style={{ fontSize: 12, color: msg.startsWith('Error') ? 'var(--lto-red)' : 'green', flex: 1 }}>{msg}</span>}
             <button className="btn btn-secondary" onClick={() => setModal(null)}>Cancel</button>
             <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Vehicle'}</button>
-          </>}>
-          <FormFields 
-            form={form} 
-            handleChange={handleChange} 
-            drivers={drivers} 
-            VEHICLE_TYPES={VEHICLE_TYPES} 
-            OWNERSHIP_TYPES={OWNERSHIP_TYPES} 
+          </>}
+        >
+          <FormFields
+            form={form}
+            handleChange={handleChange}
+            drivers={drivers}
+            VEHICLE_TYPES={VEHICLE_TYPES}
+            OWNERSHIP_TYPES={OWNERSHIP_TYPES}
           />
         </Modal>
       )}
@@ -242,15 +271,16 @@ export default function Vehicles() {
           footer={<><button className="btn btn-primary" onClick={() => openEdit(selected)}>Edit</button><button className="btn btn-secondary" onClick={() => setModal(null)}>Close</button></>}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {[
-              ['Plate Number', selected.plate_number],
+              ['Plate Number', selected.plate_no],
               ['Vehicle Type', selected.vehicle_type],
-              ['Engine Number', selected.engine_number],
-              ['Chassis Number', selected.chassis_number],
+              ['Engine Number', selected.engine_no],
+              ['Chassis Number', selected.chassis_no],
+              ['Ownership', selected.ownership],
               ['Make', selected.make],
               ['Model', selected.model],
               ['Year', selected.year],
               ['Color', selected.color],
-              ['Registered Owner', selected.owner_name ?? selected.full_name ?? '—'],
+              ['Registered Owner', selected.owner_name ?? '—'],
             ].map(([label, val]) => (
               <div key={label}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--lto-blue)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: 'Barlow Condensed, sans-serif' }}>{label}</div>
@@ -263,4 +293,3 @@ export default function Vehicles() {
     </div>
   );
 }
-
