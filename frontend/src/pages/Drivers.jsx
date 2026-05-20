@@ -17,10 +17,8 @@ const driverRules = {
   license_no:  { required: true },
   fname:       { required: true },
   lname:       { required: true },
-  // 🛑 MODIFIED: Added minAge: 17 and a specific minAgeMsg for the LTO requirement
-  bday:        { required: true, notFuture: true, minAge: 17,
-                 msg: 'Birthday cannot be a future date.',
-                 minAgeMsg: 'Applicant must be at least 17 years old to acquire a license.' },
+  bday:        { required: true, notFuture: true,
+                 msg: 'Birthday cannot be a future date.' },
   sex:         { required: true },
   nationality: { required: true },
   height_cm:   { required: true, type: 'number', msg: 'Height must be a number greater than 0.' },
@@ -137,9 +135,9 @@ export default function Drivers() {
 
   useEffect(() => { load(); }, [filterType, filterStatus]);
 
-  // 🛑 MODIFIED: Now runs on BOTH 'add' and 'edit' modes so changing birthday reflects immediately
+  // 🛑 NEW: Added effect to auto-calculate Expiration Date on new driver creation
   useEffect(() => {
-    if ((modal === 'add' || modal === 'edit') && form.bday && form.issued_date) {
+    if (modal === 'add' && form.bday && form.issued_date) {
       const [bYear, bMonth, bDay] = form.bday.split('T')[0].split('-').map(Number);
       const [iYear, iMonth, iDay] = form.issued_date.split('T')[0].split('-').map(Number);
 
@@ -453,7 +451,7 @@ export default function Drivers() {
       )}
 
       <div className="form-group">
-        <label className="form-label">Issue Date</label>
+        <label className="form-label">Issue Date <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" type="date" name="issued_date"
           value={form.issued_date?.split('T')[0] ?? ''}
           max={new Date().toISOString().split('T')[0]}
@@ -462,7 +460,7 @@ export default function Drivers() {
 
       <div className="form-group">
         <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Expiration Date</span>
+          <span>Expiration Date <span style={{ color: 'var(--lto-red)' }}>*</span> </span>
           {modal === 'edit' && (
             <button type="button" onClick={handleRenew} style={{ background: 'var(--lto-blue)', color: 'white', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}>
               RENEW 5 YRS
@@ -473,7 +471,7 @@ export default function Drivers() {
           value={form.expiry_date?.split('T')[0] ?? ''}
           min={form.issued_date?.split('T')[0] || undefined}
           onChange={handleChange}
-          disabled={modal === 'add' || modal === 'edit'} /* 🛑 MODIFIED: Disabled in both modes to enforce automatic logic */
+          disabled={modal === 'add'} /* 🛑 NEW: Disabled during 'add' mode to force auto-calculation */
         />
       </div>
 
