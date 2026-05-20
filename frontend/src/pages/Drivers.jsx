@@ -198,7 +198,7 @@ export default function Drivers() {
     <div className="form-grid">
       <div className="form-group full">
         <label className="form-label">License Number *</label>
-        <input className="form-control" name="license_no" value={form.license_no} onChange={handleChange} placeholder="N01-23-456789" />
+        <input className="form-control" name="license_no" value={form.license_no} onChange={handleChange} placeholder="N01-23-456789" disabled={modal === 'edit'} />
       </div>
       <div className="form-group">
         <label className="form-label">First Name *</label>
