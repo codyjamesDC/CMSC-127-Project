@@ -57,35 +57,31 @@ export const createTicket = async (req, res) => {
 
     const {
       location, date, violation_status, apprehending_officer, license_no, plate_no, engine_no, chassis_no,
-      violations // Expected: [{ violation_name: '...', fine_amount: 1000 }, ...]
+      violations 
     } = req.body;
 
-    //GUARD CHECKS
-    if (!location || !date || !license_no || !plate_no) {
+    // 🛑 FIX: Strip the ISO timestamp
+    const cleanDate = date ? date.split('T')[0] : null;
+
+    if (!location || !cleanDate || !license_no || !plate_no) {
       return res.status(400).json({ success: false, message: 'Missing required fields: location, date, driver, vehicle' });
     }
-    if (!violations || !Array.isArray(violations) || violations.length === 0 || !violations[0].violation_name) {
-      return res.status(400).json({ success: false, message: 'At least one violation must be provided' });
-    }
 
-    // 🛑 NEW VALIDATION: Prevent accidental double-submissions (Logical Duplicate Check)
-    // Checks if the exact same driver & car got a ticket on the exact same date
     const checkDuplicateSql = `
       SELECT ticket_id FROM violation_ticket 
       WHERE license_no = ? AND plate_no = ? AND date = ?
     `;
-    const [existingTicket] = await conn.query(checkDuplicateSql, [license_no, plate_no, date]);
+    // Use cleanDate here
+    const [existingTicket] = await conn.query(checkDuplicateSql, [license_no, plate_no, cleanDate]);
     
     if (existingTicket.length > 0) {
       await conn.rollback();
-      return res.status(400).json({ 
-        success: false, 
-        message: 'A ticket for this driver and vehicle was already recorded on this date.' 
-      });
+      return res.status(400).json({ success: false, message: 'A ticket for this driver and vehicle was already recorded on this date.' });
     }
 
+    // Use cleanDate here
     const ticketValues = [
-      location, date, violation_status || 'Unpaid', apprehending_officer, license_no, plate_no, engine_no, chassis_no
+      location, cleanDate, violation_status || 'Unpaid', apprehending_officer, license_no, plate_no, engine_no, chassis_no
     ];
 
     // 1. Insert Ticket
@@ -131,27 +127,26 @@ export const updateTicket = async (req, res) => {
       violations 
     } = req.body;
 
-    // 🛑 NEW VALIDATION: Logical Duplicate Check
-    // Ensures this edit doesn't perfectly match a DIFFERENT ticket already in the database
+    // 🛑 FIX: Strip the ISO timestamp so MySQL accepts it
+    const cleanDate = date ? date.split('T')[0] : null;
+
     const checkDuplicateSql = `
       SELECT ticket_id FROM violation_ticket 
       WHERE license_no = ? AND plate_no = ? AND date = ? AND ticket_id != ?
     `;
-    const [existingTicket] = await conn.query(checkDuplicateSql, [license_no, plate_no, date, ticket_id]);
+    // Use cleanDate here
+    const [existingTicket] = await conn.query(checkDuplicateSql, [license_no, plate_no, cleanDate, ticket_id]);
     
     if (existingTicket.length > 0) {
       await conn.rollback();
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Another ticket for this driver and vehicle already exists on this date.' 
-      });
+      return res.status(400).json({ success: false, message: 'Another ticket for this driver and vehicle already exists on this date.' });
     }
 
+    // Use cleanDate here
     const ticketValues = [
-      location, date, violation_status, apprehending_officer, license_no, plate_no, engine_no, chassis_no, ticket_id
+      location, cleanDate, violation_status, apprehending_officer, license_no, plate_no, engine_no, chassis_no, ticket_id
     ];
 
-    // 1. Update Ticket Base Details
     const [result] = await conn.query(ticketQueries.update, ticketValues);
     if (result.affectedRows === 0) {
       await conn.rollback();

@@ -1,14 +1,11 @@
-// frontend/src/pages/Drivers.jsx
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { driversApi } from '../api/client';
 
 const LICENSE_TYPES = ['Student Permit', 'Non-Professional', 'Professional'];
-// P0 1.2 FIX: Title Case to match DB seeds ('Active' not 'active')
 const LICENSE_STATUSES = ['Active', 'Expired', 'Suspended', 'Revoked'];
 const SEXES = ['M', 'F'];
 
-// P0 1.1 FIX: emptyForm now uses backend field names exactly
 const emptyForm = {
   license_no: '',
   fname: '',
@@ -32,7 +29,7 @@ const emptyForm = {
   emrg_contact_person: '',
   emrg_contact_no: '',
   license_type: 'Non-Professional',
-  license_status: 'Active',
+  license_status: 'Active', 
   issued_date: '',
   expiry_date: '',
   agency_code: '',
@@ -66,7 +63,6 @@ export default function Drivers() {
 
       const mappedDrivers = rawData.map(d => ({
         ...d,
-        // Derive display full_name from separate backend fields
         full_name: [d.fname, d.mname, d.lname].filter(Boolean).join(' '),
         addresses: d.addresses || [],
         conditions: d.conditions || [],
@@ -96,7 +92,6 @@ export default function Drivers() {
   const openAdd = () => { setForm(emptyForm); setModal('add'); setMsg(''); };
 
   const openEdit = (d) => {
-    // P0 1.1 FIX: spread d directly — all fields are already backend-named
     setForm({
       ...d,
       addresses: d.addresses?.length ? d.addresses : [],
@@ -122,10 +117,22 @@ export default function Drivers() {
     setForm({ ...form, [field]: newArray });
   };
 
+  // 🛑 NEW FUNCTION: Handles the Renew button logic
+  const handleRenew = () => {
+    const today = new Date();
+    today.setFullYear(today.getFullYear() + 5);
+    const newExpiry = today.toISOString().split('T')[0];
+    
+    setForm(f => ({
+      ...f,
+      expiry_date: newExpiry,
+      license_status: 'Active'
+    }));
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      // P0 1.1 FIX: payload uses correct backend field names — no translation needed
       const payload = {
         ...form,
         bday: form.bday?.split('T')[0],
@@ -161,7 +168,6 @@ export default function Drivers() {
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
-  // P0 1.1 FIX: All name= attributes match backend column names
   const FormFields = () => (
     <div className="form-grid">
       <div className="form-group full">
@@ -182,7 +188,6 @@ export default function Drivers() {
       </div>
       <div className="form-group">
         <label className="form-label">Date of Birth *</label>
-        {/* P0 1.1 FIX: name="bday" (was date_of_birth) */}
         <input className="form-control" type="date" name="bday" value={form.bday?.split('T')[0] ?? ''} onChange={handleChange} />
       </div>
       <div className="form-group">
@@ -235,22 +240,35 @@ export default function Drivers() {
           {LICENSE_TYPES.map(t => <option key={t}>{t}</option>)}
         </select>
       </div>
-      {/* P0 1.2 FIX: status values match DB ('Active' not 'active') */}
-      <div className="form-group">
-        <label className="form-label">License Status</label>
-        <select className="form-control" name="license_status" value={form.license_status} onChange={handleChange}>
-          {LICENSE_STATUSES.map(s => <option key={s}>{s}</option>)}
-        </select>
-      </div>
-      {/* P0 1.1 FIX: name="issued_date" (was issue_date) and name="expiry_date" (was expiration_date) */}
+
+      {/* 🛑 CONDITIONAL RENDERING: Only show License Status when editing an existing driver */}
+      {modal === 'edit' && (
+        <div className="form-group">
+          <label className="form-label">License Status</label>
+          <select className="form-control" name="license_status" value={form.license_status} onChange={handleChange}>
+            {LICENSE_STATUSES.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+      )}
+
       <div className="form-group">
         <label className="form-label">Issue Date</label>
         <input className="form-control" type="date" name="issued_date" value={form.issued_date?.split('T')[0] ?? ''} onChange={handleChange} />
       </div>
+
       <div className="form-group">
-        <label className="form-label">Expiration Date</label>
+        {/* 🛑 NEW RENEW BUTTON: Rendered right next to the Expiration Date label */}
+        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Expiration Date</span>
+          {modal === 'edit' && (
+            <button type="button" onClick={handleRenew} style={{ background: 'var(--lto-blue)', color: 'white', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}>
+              RENEW 5 YRS
+            </button>
+          )}
+        </label>
         <input className="form-control" type="date" name="expiry_date" value={form.expiry_date?.split('T')[0] ?? ''} onChange={handleChange} />
       </div>
+      
       <div className="form-group">
         <label className="form-label">Agency Code</label>
         <input className="form-control" name="agency_code" value={form.agency_code} onChange={handleChange} placeholder="LTO-NCR" />
@@ -276,7 +294,6 @@ export default function Drivers() {
             <option value="">All License Types</option>
             {LICENSE_TYPES.map(t => <option key={t}>{t}</option>)}
           </select>
-          {/* P0 1.2 FIX: filter options use Title Case matching DB */}
           <select className="filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
             <option value="">All Statuses</option>
             {LICENSE_STATUSES.map(s => <option key={s}>{s}</option>)}
@@ -303,7 +320,6 @@ export default function Drivers() {
                   <tr key={d.license_no ?? i}>
                     <td style={{ color: 'var(--lto-text-muted)', fontWeight: 600 }}>{i + 1}</td>
                     <td style={{ fontWeight: 600 }}>{d.full_name}</td>
-                    {/* P0 1.1 FIX: display d.license_no (backend field) */}
                     <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{d.license_no}</td>
                     <td><span style={{ fontSize: 12, background: 'rgba(0,48,135,0.08)', color: 'var(--lto-blue)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>{d.license_type}</span></td>
                     <td><StatusBadge status={d.license_status} /></td>
@@ -315,7 +331,6 @@ export default function Drivers() {
                         </>
                       ) : '—'}
                     </td>
-                    {/* P0 1.1 FIX: use expiry_date (backend field, was expiration_date) */}
                     <td style={{ fontSize: 12 }}>{d.expiry_date ? new Date(d.expiry_date).toLocaleDateString('en-PH') : '—'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>

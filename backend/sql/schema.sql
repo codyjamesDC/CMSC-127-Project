@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS `vehicle` (
     year            YEAR            NOT NULL,
     license_no      VARCHAR(15)     NOT NULL,
     PRIMARY KEY (`plate_no`, `engine_no`, `chassis_no`),
-    FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`)
+    FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`),
     CONSTRAINT chk_ownership CHECK (ownership IN ('Private','For Hire','Government'))
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS `violation_ticket` (
     PRIMARY KEY (`ticket_id`),
     FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (`plate_no`, `engine_no`, `chassis_no`) 
-    REFERENCES `vehicle`(`plate_no`, `engine_no`, `chassis_no`) ON DELETE CASCADE ON UPDATE CASCADE
+    REFERENCES `vehicle`(`plate_no`, `engine_no`, `chassis_no`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT chk_vio_status CHECK (violation_status IN ('Paid','Unpaid','Contested'))
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

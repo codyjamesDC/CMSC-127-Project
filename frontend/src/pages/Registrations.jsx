@@ -195,7 +195,7 @@ export default function Registrations() {
             <button className="btn btn-secondary" onClick={() => setModal(null)}>Cancel</button>
             <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
           </>}>
-          <FormFields />
+          {FormFields()}
         </Modal>
       )}
     </div>

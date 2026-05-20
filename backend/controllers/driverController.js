@@ -70,39 +70,40 @@ export const createDriver = async (req, res) => {
   try {
     await conn.beginTransaction();
     
+    // 🛑 FIX: Destructure the exact names the frontend now sends
     const {
-      license_number, full_name, date_of_birth, sex, 
+      license_number, full_name, bday, sex, 
       addresses, conditions, license_codes,
-      license_type, license_status, issue_date, expiration_date
+      license_type, issued_date, expiry_date
     } = req.body;
 
-    //Guard Check
-    if (!license_number || !full_name || !date_of_birth || !sex) {
-      return res.status(400).json({ success: false, message: 'Missing required fields: license_no, full_name, date_of_birth, sex' });
+    if (!license_number || !full_name || !bday || !sex) {
+      return res.status(400).json({ success: false, message: 'Missing required fields: license_no, full_name, bday, sex' });
     }
 
-    // 🛑 NEW VALIDATION: Check for duplicate License Number
     const [existing] = await conn.query(driverQueries.selectByLicense, [license_number]);
     if (existing.length > 0) {
       await conn.rollback();
       return res.status(400).json({ success: false, message: 'Driver with this license number already exists.' });
     }
 
+    const isExpired = new Date(expiry_date) < new Date();
+    const computedStatus = isExpired ? 'Expired' : 'Active';
+
     const nameParts = full_name.split(' ');
     const fname = nameParts[0] || 'Unknown';
     const lname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Unknown';
 
-    // 1. Insert Driver
+    // 🛑 FIX: Use the new variables here
     const driverValues = [
-      license_number, fname, lname, '', date_of_birth, sex, 
+      license_number, fname, lname, '', bday, sex, 
       'Filipino', 0, 0, 'Brown', 'O+', '09000000000', 0, 
       'Mother', 'Name', '', 'Father', 'Name', '', 
-      'Emergency', '09000000000', license_type, license_status, 
-      issue_date, expiration_date, 'LTO-NCR'
+      'Emergency', '09000000000', license_type, computedStatus, 
+      issued_date, expiry_date, 'LTO-NCR'
     ];
     await conn.query(driverQueries.insert, driverValues);
 
-    // 2. Insert Arrays (ignoring empty strings)
     if (addresses?.length) {
       for (const addr of addresses) {
         if (addr.trim()) await conn.query(addressQueries.insert, [license_number, addr]);
@@ -137,14 +138,14 @@ export const updateDriver = async (req, res) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const { license_no } = req.params; // The OLD license number
+    const { license_no } = req.params; 
+    
     const {
-      license_number, full_name, date_of_birth, sex, 
+      license_number, full_name, bday, sex, 
       addresses, conditions, license_codes,
-      license_type, license_status, issue_date, expiration_date
+      license_type, license_status, issued_date, expiry_date
     } = req.body;
 
-    // 🛑 VALIDATION: If they changed the license number, check if the NEW one is already taken
     if (license_number && license_number !== license_no) {
       const [existing] = await conn.query(driverQueries.selectByLicense, [license_number]);
       if (existing.length > 0) {
@@ -159,17 +160,17 @@ export const updateDriver = async (req, res) => {
     const lname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Unknown';
 
     const values = [
-      license_number || license_no, // NEW license number (or keep old)
+      license_number || license_no,
       fname, lname, '', 
-      formatDate(date_of_birth), sex, 
+      formatDate(bday), sex, 
       'Filipino', 0, 0, 'Brown', 'O+', '09000000000', 0, 
       'Mother', 'Name', '', 'Father', 'Name', '', 
       'Emergency', '09000000000', 
       license_type, license_status, 
-      formatDate(issue_date), 
-      formatDate(expiration_date), 
+      formatDate(issued_date), 
+      formatDate(expiry_date), 
       'LTO-NCR',
-      license_no // The OLD license number for the WHERE clause
+      license_no 
     ];
 
     const [result] = await conn.query(driverQueries.update, values);
@@ -178,7 +179,6 @@ export const updateDriver = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Driver not found' });
     }
 
-    // Because of ON UPDATE CASCADE, we must use the NEW license number to update the arrays
     const effectiveLicense = license_number || license_no;
 
     await conn.query(addressQueries.deleteAllForDriver, [effectiveLicense]);
