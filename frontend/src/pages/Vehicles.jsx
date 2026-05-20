@@ -37,7 +37,7 @@ const vehicleRules = {
 const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPES }) => (
   <div className="form-grid">
     <div className="form-group">
-      <label className="form-label">Plate Number *</label>
+      <label className="form-label">Plate Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       {/* P0 1.1 FIX: name="plate_no" (was plate_number) */}
       <input className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange} placeholder="AAA1234" />
     </div>
@@ -48,12 +48,12 @@ const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPE
       </select>
     </div>
     <div className="form-group">
-      <label className="form-label">Engine Number *</label>
+      <label className="form-label">Engine Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       {/* P0 1.1 FIX: name="engine_no" (was engine_number) */}
       <input className="form-control" name="engine_no" value={form.engine_no} onChange={handleChange} placeholder="ENGINE123" />
     </div>
     <div className="form-group">
-      <label className="form-label">Chassis Number *</label>
+      <label className="form-label">Chassis Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       {/* P0 1.1 FIX: name="chassis_no" (was chassis_number) */}
       <input className="form-control" name="chassis_no" value={form.chassis_no} onChange={handleChange} placeholder="CHASSIS123" />
     </div>
@@ -64,23 +64,23 @@ const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPE
       </select>
     </div>
     <div className="form-group">
-      <label className="form-label">Make (Brand) *</label>
+      <label className="form-label">Make (Brand) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       <input className="form-control" name="make" value={form.make} onChange={handleChange} placeholder="Toyota" />
     </div>
     <div className="form-group">
-      <label className="form-label">Model *</label>
+      <label className="form-label">Model <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       <input className="form-control" name="model" value={form.model} onChange={handleChange} placeholder="Vios" />
     </div>
     <div className="form-group">
-      <label className="form-label">Year *</label>
+      <label className="form-label">Year <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       <input className="form-control" type="number" name="year" value={form.year} onChange={handleChange} placeholder="2024" min="1900" max="2030" />
     </div>
     <div className="form-group">
-      <label className="form-label">Color *</label>
+      <label className="form-label">Color <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       <input className="form-control" name="color" value={form.color} onChange={handleChange} placeholder="White" />
     </div>
     <div className="form-group full">
-      <label className="form-label">Registered Owner (Driver) *</label>
+      <label className="form-label">Registered Owner (Driver) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       {/* P0 1.1 FIX: name="license_no" (was driver_id) */}
       <select className="form-control" name="license_no" value={form.license_no ?? ''} onChange={handleChange}>
         <option value="">— Select Owner —</option>
@@ -196,7 +196,7 @@ export default function Vehicles() {
   };
 
   const handleDelete = async (v) => {
-    if (!window.confirm(`Delete vehicle "${v.plate_no}"?`)) return;
+    if (!window.confirm(`WARNING: Deleting vehicle "${v.plate_no}" will permanently remove all of its associated REGISTRATIONS and TRAFFIC VIOLATION TICKETS.\n\nDo you want to proceed?`)) return;
     try { await vehiclesApi.delete(v.plate_no); load(); }
     catch (e) { alert('Delete failed: ' + (e.response?.data?.message ?? e.message)); }
   };
