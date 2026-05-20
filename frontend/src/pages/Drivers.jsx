@@ -8,6 +8,8 @@ import useSortableTable from '../hooks/useSortableTable';
 const LICENSE_TYPES = ['Student Permit', 'Non-Professional', 'Professional'];
 const LICENSE_STATUSES = ['Active', 'Expired', 'Suspended', 'Revoked'];
 const SEXES = ['M', 'F'];
+const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+const EYE_COLORS = ['Brown', 'Black', 'Blue', 'Green', 'Hazel', 'Gray'];
 
 const driverRules = {
   license_no:  { required: true },
@@ -16,6 +18,18 @@ const driverRules = {
   bday:        { required: true, notFuture: true,
                  msg: 'Birthday cannot be a future date.' },
   sex:         { required: true },
+  nationality: { required: true },
+  height_cm:   { required: true, type: 'number', msg: 'Height must be a number greater than 0.' },
+  weight_kg:   { required: true, type: 'number', msg: 'Weight must be a number greater than 0.' },
+  eye_color:   { required: true },
+  blood_type:  { required: true },
+  contact_no:  { required: true },
+  mother_fname:{ required: true },
+  mother_lname:{ required: true },
+  father_fname:{ required: true },
+  father_lname:{ required: true },
+  emrg_contact_person: { required: true },
+  emrg_contact_no:     { required: true },
   // Cross-field date check (runs only when both fields have a value)
   expiry_date: { afterField: 'issued_date',
                  msg: 'Expiration date must be after the issue date.' },
@@ -289,6 +303,63 @@ export default function Drivers() {
       <div className="form-group">
         <label className="form-label">Contact No.</label>
         <input className="form-control" name="contact_no" value={form.contact_no} onChange={handleChange} placeholder="09171234567" />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Nationality *</label>
+        <input className="form-control" name="nationality" value={form.nationality} onChange={handleChange} placeholder="Filipino" />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Height (cm) *</label>
+        <input className="form-control" type="number" step="0.01" min="0" name="height_cm" value={form.height_cm} onChange={handleChange} placeholder="170" />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Weight (kg) *</label>
+        <input className="form-control" type="number" step="0.01" min="0" name="weight_kg" value={form.weight_kg} onChange={handleChange} placeholder="65" />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Eye Color *</label>
+        <select className="form-control" name="eye_color" value={form.eye_color} onChange={handleChange}>
+          {EYE_COLORS.map(color => <option key={color}>{color}</option>)}
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Blood Type *</label>
+        <select className="form-control" name="blood_type" value={form.blood_type} onChange={handleChange}>
+          {BLOOD_TYPES.map(type => <option key={type}>{type}</option>)}
+        </select>
+      </div>
+
+      <div className="form-group full">
+      <label className="form-label">Mother's Name</label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input className="form-control" style={{ flex: 1 }} name="mother_fname" value={form.mother_fname} onChange={handleChange} placeholder="Mother First" />
+          <input className="form-control" style={{ flex: 1 }} name="mother_mname" value={form.mother_mname} onChange={handleChange} placeholder="Mother Middle" />
+          <input className="form-control" style={{ flex: 1 }} name="mother_lname" value={form.mother_lname} onChange={handleChange} placeholder="Mother Last" />
+        </div>
+      </div>
+
+      <div className="form-group full">
+      <label className="form-label">Father's Name</label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input className="form-control" style={{ flex: 1 }} name="father_fname" value={form.father_fname} onChange={handleChange} placeholder="Father First" />
+          <input className="form-control" style={{ flex: 1 }} name="father_mname" value={form.father_mname} onChange={handleChange} placeholder="Father Middle" />
+          <input className="form-control" style={{ flex: 1 }} name="father_lname" value={form.father_lname} onChange={handleChange} placeholder="Father Last" />
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Emergency Contact Person *</label>
+        <input className="form-control" name="emrg_contact_person" value={form.emrg_contact_person} onChange={handleChange} placeholder="Full name" />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Emergency Contact No. *</label>
+        <input className="form-control" name="emrg_contact_no" value={form.emrg_contact_no} onChange={handleChange} placeholder="09171234567" />
       </div>
 
       <div className="form-group full" style={{ background: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 8 }}>
