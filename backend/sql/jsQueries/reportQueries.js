@@ -2,14 +2,21 @@ export const reportQueries = {
   // 1. Filtered drivers
   // Uses TIMESTAMPDIFF to calculate age dynamically from date_of_birth.
   // Checks if the parameter is an empty string first; if it is, it skips the filter.
-  filteredDrivers: `
-    SELECT * FROM driver 
-    WHERE (? = '' OR license_type = ?)
-      AND (? = '' OR license_status = ?)
-      AND (? = '' OR sex = ?)
-      AND (? = '' OR TIMESTAMPDIFF(YEAR, bday, CURDATE()) >= ?)
-      AND (? = '' OR TIMESTAMPDIFF(YEAR, bday, CURDATE()) <= ?)
-  `,
+//Query Builder
+  buildFilteredDriversQuery: (filters) => {
+    const conditions = ['1 = 1'];
+    const params = [];
+    if (filters.license_type)  { conditions.push('license_type = ?');  params.push(filters.license_type); }
+    if (filters.license_status){ conditions.push('license_status = ?'); params.push(filters.license_status); }
+    if (filters.sex)           { conditions.push('sex = ?');            params.push(filters.sex); }
+    if (filters.age_min)       { conditions.push('TIMESTAMPDIFF(YEAR, bday, CURDATE()) >= ?'); params.push(parseInt(filters.age_min)); }
+    if (filters.age_max)       { conditions.push('TIMESTAMPDIFF(YEAR, bday, CURDATE()) <= ?'); params.push(parseInt(filters.age_max)); }
+    
+    return {
+      sql: `SELECT * FROM vw_driver_info WHERE ${conditions.join(' AND ')}`,
+      params
+    };
+  }, 
   
   // 2. Vehicles owned by driver
   vehiclesByDriver: `SELECT * FROM vw_vehicle_ownership WHERE license_no = ?`,

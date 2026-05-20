@@ -7,42 +7,8 @@ import { reportQueries } from '../sql/jsQueries/reportQueries.js';
 
 export const getFilteredDrivers = async (req, res) => {
   try {
-    const { license_type, license_status, sex, age_min, age_max } = req.query;
-
-    // 1. Start with a base query that selects everything
-    let sqlQuery = 'SELECT * FROM driver WHERE 1=1';
-    const queryParams = [];
-
-    // 2. Dynamically add filters only if they exist and are not empty
-    if (license_type) {
-      sqlQuery += ' AND license_type = ?';
-      queryParams.push(license_type);
-    }
-
-    if (license_status) {
-      sqlQuery += ' AND license_status = ?';
-      queryParams.push(license_status);
-    }
-
-    if (sex) {
-      sqlQuery += ' AND sex = ?';
-      queryParams.push(sex);
-    }
-
-    // Convert age to numbers and ignore if they are 0 or empty
-    if (age_min && age_min !== '0') {
-      sqlQuery += ' AND TIMESTAMPDIFF(YEAR, bday, CURDATE()) >= ?';
-      queryParams.push(Number(age_min));
-    }
-
-    if (age_max && age_max !== '0') {
-      sqlQuery += ' AND TIMESTAMPDIFF(YEAR, bday, CURDATE()) <= ?';
-      queryParams.push(Number(age_max));
-    }
-
-    // 3. Execute the exact query needed
-    // (Notice we don't use reportQueries.filteredDrivers anymore)
-    const [rows] = await pool.query(sqlQuery, queryParams);
+    const { sql, params } = reportQueries.buildFilteredDriversQuery(req.query);
+    const [rows] = await pool.query(sql, params);
     
     res.status(200).json({ success: true, count: rows.length, data: rows });
   } catch (error) {
