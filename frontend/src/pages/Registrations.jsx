@@ -201,8 +201,8 @@ export default function Registrations() {
           </div>
           <select className="filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
             <option value="">All Statuses</option>
-            <option value="active">active</option>
-            <option value="expired">expired</option>
+            <option value="active">Active</option>
+            <option value="expired">Expired</option>
           </select>
           {/* 🛑 NEW: Clear Sort Button */}
           {sortConfig.key && <button className="btn btn-secondary btn-sm" onClick={resetSort} style={{ color: 'var(--lto-red)' }}>✕ Clear Sort</button>}
