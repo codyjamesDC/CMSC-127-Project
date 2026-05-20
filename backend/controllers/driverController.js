@@ -70,18 +70,22 @@ export const createDriver = async (req, res) => {
   try {
     await conn.beginTransaction();
     
-    // 🛑 FIX: Destructure the exact names the frontend now sends
     const {
-      license_number, full_name, bday, sex, 
+      license_no, fname, lname, mname, bday, sex, 
       addresses, conditions, license_codes,
-      license_type, issued_date, expiry_date
+      license_type, issued_date, expiry_date,
+      // Additional Info
+      nationality, height_cm, weight_kg, eye_color, blood_type, contact_no, organ_donor,
+      mother_fname, mother_lname, mother_mname, father_fname, father_lname, father_mname,
+      emrg_contact_person, emrg_contact_no, agency_code
     } = req.body;
 
-    if (!license_number || !full_name || !bday || !sex) {
-      return res.status(400).json({ success: false, message: 'Missing required fields: license_no, full_name, bday, sex' });
+    // Guard clause looks for the correct variable names now
+    if (!license_no || !fname || !lname || !bday || !sex) {
+      return res.status(400).json({ success: false, message: 'Missing required fields: license_no, fname, lname, bday, sex' });
     }
 
-    const [existing] = await conn.query(driverQueries.selectByLicense, [license_number]);
+    const [existing] = await conn.query(driverQueries.selectByLicense, [license_no]);
     if (existing.length > 0) {
       await conn.rollback();
       return res.status(400).json({ success: false, message: 'Driver with this license number already exists.' });
@@ -90,33 +94,31 @@ export const createDriver = async (req, res) => {
     const isExpired = new Date(expiry_date) < new Date();
     const computedStatus = isExpired ? 'Expired' : 'Active';
 
-    const nameParts = full_name.split(' ');
-    const fname = nameParts[0] || 'Unknown';
-    const lname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Unknown';
-
-    // 🛑 FIX: Use the new variables here
+    // 🛑 FIX: Values array maps perfectly to driverQueries.insert
     const driverValues = [
-      license_number, fname, lname, '', bday, sex, 
-      'Filipino', 0, 0, 'Brown', 'O+', '09000000000', 0, 
-      'Mother', 'Name', '', 'Father', 'Name', '', 
-      'Emergency', '09000000000', license_type, computedStatus, 
-      issued_date, expiry_date, 'LTO-NCR'
+      license_no, fname, lname, mname || '', bday, sex, 
+      nationality || 'Filipino', height_cm || 0, weight_kg || 0, eye_color || 'Brown', blood_type || 'O+', contact_no || '09000000000', organ_donor || 0, 
+      mother_fname || 'N/A', mother_lname || 'N/A', mother_mname || '', 
+      father_fname || 'N/A', father_lname || 'N/A', father_mname || '', 
+      emrg_contact_person || 'N/A', emrg_contact_no || '09000000000', 
+      license_type, computedStatus, 
+      issued_date || null, expiry_date || null, agency_code || 'LTO-NCR'
     ];
     await conn.query(driverQueries.insert, driverValues);
 
     if (addresses?.length) {
       for (const addr of addresses) {
-        if (addr.trim()) await conn.query(addressQueries.insert, [license_number, addr]);
+        if (addr.trim()) await conn.query(addressQueries.insert, [license_no, addr]);
       }
     }
     if (conditions?.length) {
       for (const cond of conditions) {
-        if (cond.trim()) await conn.query(conditionQueries.insert, [license_number, cond]);
+        if (cond.trim()) await conn.query(conditionQueries.insert, [license_no, cond]);
       }
     }
     if (license_codes?.length) {
       for (const code of license_codes) {
-        if (code.trim()) await conn.query(licenseCodeQueries.insert, [license_number, code]);
+        if (code.trim()) await conn.query(licenseCodeQueries.insert, [license_no, code]);
       }
     }
 
@@ -138,16 +140,23 @@ export const updateDriver = async (req, res) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const { license_no } = req.params; 
     
+    // We capture the old ID from the URL
+    const old_license_no = req.params.license_no; 
+    
+    // 🛑 FIX: Destructure the EXACT names the frontend now sends
     const {
-      license_number, full_name, bday, sex, 
+      license_no, fname, lname, mname, bday, sex, 
       addresses, conditions, license_codes,
-      license_type, license_status, issued_date, expiry_date
+      license_type, license_status, issued_date, expiry_date,
+      nationality, height_cm, weight_kg, eye_color, blood_type, contact_no, organ_donor,
+      mother_fname, mother_lname, mother_mname, father_fname, father_lname, father_mname,
+      emrg_contact_person, emrg_contact_no, agency_code
     } = req.body;
 
-    if (license_number && license_number !== license_no) {
-      const [existing] = await conn.query(driverQueries.selectByLicense, [license_number]);
+    // Check if they are trying to change the primary key
+    if (license_no && license_no !== old_license_no) {
+      const [existing] = await conn.query(driverQueries.selectByLicense, [license_no]);
       if (existing.length > 0) {
         await conn.rollback();
         return res.status(400).json({ success: false, message: 'This License Number is already taken by another driver.' });
@@ -155,22 +164,21 @@ export const updateDriver = async (req, res) => {
     }
 
     const formatDate = (dateStr) => dateStr ? dateStr.split('T')[0] : null;
-    const nameParts = (full_name || '').split(' ');
-    const fname = nameParts[0] || 'Unknown';
-    const lname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Unknown';
 
+    // 🛑 FIX: Map the new variable names to the UPDATE array
     const values = [
-      license_number || license_no,
-      fname, lname, '', 
+      license_no || old_license_no,
+      fname, lname, mname || '', 
       formatDate(bday), sex, 
-      'Filipino', 0, 0, 'Brown', 'O+', '09000000000', 0, 
-      'Mother', 'Name', '', 'Father', 'Name', '', 
-      'Emergency', '09000000000', 
+      nationality || 'Filipino', height_cm || 0, weight_kg || 0, eye_color || 'Brown', blood_type || 'O+', contact_no || '09000000000', organ_donor || 0, 
+      mother_fname || 'N/A', mother_lname || 'N/A', mother_mname || '', 
+      father_fname || 'N/A', father_lname || 'N/A', father_mname || '', 
+      emrg_contact_person || 'N/A', emrg_contact_no || '09000000000', 
       license_type, license_status, 
       formatDate(issued_date), 
       formatDate(expiry_date), 
-      'LTO-NCR',
-      license_no 
+      agency_code || 'LTO-NCR',
+      old_license_no // The OLD license number for the WHERE clause
     ];
 
     const [result] = await conn.query(driverQueries.update, values);
@@ -179,7 +187,7 @@ export const updateDriver = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Driver not found' });
     }
 
-    const effectiveLicense = license_number || license_no;
+    const effectiveLicense = license_no || old_license_no;
 
     await conn.query(addressQueries.deleteAllForDriver, [effectiveLicense]);
     if (addresses?.length) {

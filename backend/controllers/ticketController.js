@@ -63,8 +63,11 @@ export const createTicket = async (req, res) => {
     // 🛑 FIX: Strip the ISO timestamp
     const cleanDate = date ? date.split('T')[0] : null;
 
-    if (!location || !cleanDate || !license_no || !plate_no) {
-      return res.status(400).json({ success: false, message: 'Missing required fields: location, date, driver, vehicle' });
+    if (!location || !cleanDate || !license_no || !plate_no || !apprehending_officer || apprehending_officer.trim() === '') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields: location, date, driver, vehicle, apprehending officer' 
+      });
     }
 
     const checkDuplicateSql = `
@@ -129,6 +132,14 @@ export const updateTicket = async (req, res) => {
 
     // 🛑 FIX: Strip the ISO timestamp so MySQL accepts it
     const cleanDate = date ? date.split('T')[0] : null;
+
+    if (!location || !cleanDate || !license_no || !plate_no || !apprehending_officer || apprehending_officer.trim() === '') {
+      await conn.rollback();
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields: location, date, driver, vehicle, apprehending officer' 
+      });
+    }
 
     const checkDuplicateSql = `
       SELECT ticket_id FROM violation_ticket 

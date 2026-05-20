@@ -123,30 +123,36 @@ export const createVehicle = async (req, res) => {
 // ==========================================
 // UPDATE: Modify an existing vehicle
 // ==========================================
+// ==========================================
+// UPDATE: Modify an existing vehicle
+// ==========================================
 export const updateVehicle = async (req, res) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const { plate_no } = req.params; // The OLD plate number
+    const { plate_no } = req.params; // The OLD plate number from the URL URL
+    
+    // Destructure EXACTLY what the frontend form sends (plate_no, not plate_number)
     const { 
-      plate_number, ownership, vehicle_type, color, make, model, year, license_no,
+      plate_no: new_plate_no, // Rename it locally so it doesn't clash with req.params
+      ownership, vehicle_type, color, make, model, year, license_no,
       registrations, engine_no, chassis_no 
     } = req.body;
 
-    const newPlateNo = plate_number || plate_no;
-
-    // 🛑 VALIDATION: Check if they changed the plate and if the new one exists
-    if (newPlateNo !== plate_no) {
-      const [existing] = await conn.query(vehicleQueries.selectByPlate, [newPlateNo]);
-      if (existing.length > 0) {
-        await conn.rollback();
-        return res.status(400).json({ success: false, message: 'This Plate Number is already registered to another vehicle.' });
-      }
+    //Prevent Changing Primary Key on Update
+    if (new_plate_no && new_plate_no !== plate_no) {
+      await conn.rollback();
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Plate number (primary key) cannot be changed. Delete and re-create the vehicle instead.' 
+      });
     }
 
+    // 🛑 FIX 2: This array MUST perfectly match the 10 placeholders in vehicleQueries.update
+    // Expected order: engine_no, chassis_no, ownership, vehicle_type, color, make, model, year, license_no, WHERE plate_no
     const vehicleValues = [
-      newPlateNo, engine_no, chassis_no, ownership, vehicle_type, color, make, model, year, license_no,
-      plate_no // OLD plate number for the WHERE clause
+      engine_no, chassis_no, ownership, vehicle_type, color, make, model, year, license_no,
+      plate_no // The OLD plate number for the WHERE clause
     ];
 
     const [result] = await conn.query(vehicleQueries.update, vehicleValues);
@@ -155,14 +161,14 @@ export const updateVehicle = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Vehicle not found' });
     }
 
-    // Wipe & Replace Registrations using the NEW plate number
+    // Wipe & Replace Registrations using the constant plate_no
     if (registrations && Array.isArray(registrations)) {
-      await conn.query(registrationQueries.deleteAllForVehicle, [newPlateNo]);
+      await conn.query(registrationQueries.deleteAllForVehicle, [plate_no]);
       if (registrations.length > 0) {
         for (const reg of registrations) {
           await conn.query(registrationQueries.insert, [
             reg.registration_no, reg.expiration_date, reg.registration_date, 
-            newPlateNo, engine_no, chassis_no
+            plate_no, engine_no, chassis_no
           ]);
         }
       }

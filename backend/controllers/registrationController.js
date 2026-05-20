@@ -68,13 +68,15 @@ export const createRegistration = async (req, res) => {
       return res.status(400).json({ success: false, message: 'registration_number and plate_no are required' });
     }
 
-    // 🛑 NEW VALIDATION: Check for duplicate Registration Number
+    // 🛑 FIX: Strip ISO timestamps so MySQL accepts them
+    const cleanRegDate = registration_date ? registration_date.split('T')[0] : null;
+    const cleanExpDate = expiration_date ? expiration_date.split('T')[0] : null;
+
     const [existingReg] = await pool.query(registrationQueries.selectByNumber, [registration_number]);
     if (existingReg.length > 0) {
       return res.status(400).json({ success: false, message: 'This Registration Number already exists.' });
     }
 
-    // Verify Vehicle exists to grab engine and chassis
     const [vehicleRows] = await pool.query(vehicleQueries.selectByPlate, [plate_no]);
     if (vehicleRows.length === 0) {
       return res.status(400).json({ success: false, message: 'Vehicle not found' });
@@ -82,9 +84,9 @@ export const createRegistration = async (req, res) => {
 
     const vehicle = vehicleRows[0];
     
-    // Insert Registration
+    // Insert Registration using clean dates
     await pool.query(registrationQueries.insert, [
-      registration_number, expiration_date, registration_date,
+      registration_number, cleanExpDate, cleanRegDate,
       plate_no, vehicle.engine_no, vehicle.chassis_no,
     ]);
 
@@ -100,7 +102,7 @@ export const createRegistration = async (req, res) => {
 // ==========================================
 export const updateRegistration = async (req, res) => {
   try {
-    const { registration_no } = req.params; // The OLD registration number
+    const { registration_no } = req.params; 
     const {
       registration_number,
       registration_date,
@@ -115,7 +117,10 @@ export const updateRegistration = async (req, res) => {
       return res.status(400).json({ success: false, message: 'plate_no is required' });
     }
 
-    // 🛑 NEW VALIDATION: Check if they changed the Registration Number and if it is taken
+    // 🛑 FIX: Strip ISO timestamps so MySQL accepts them
+    const cleanRegDate = registration_date ? registration_date.split('T')[0] : null;
+    const cleanExpDate = expiration_date ? expiration_date.split('T')[0] : null;
+
     if (effectiveRegistrationNumber !== registration_no) {
       const [existingReg] = await pool.query(registrationQueries.selectByNumber, [effectiveRegistrationNumber]);
       if (existingReg.length > 0) {
@@ -126,7 +131,6 @@ export const updateRegistration = async (req, res) => {
       }
     }
 
-    // Verify Vehicle exists to grab engine and chassis
     const [vehicleRows] = await pool.query(vehicleQueries.selectByPlate, [effectivePlateNo]);
     if (vehicleRows.length === 0) {
       return res.status(400).json({ success: false, message: 'Vehicle not found' });
@@ -134,15 +138,15 @@ export const updateRegistration = async (req, res) => {
 
     const vehicle = vehicleRows[0];
     
-    // Update Registration
+    // Update Registration using clean dates
     const [result] = await pool.query(registrationQueries.update, [
       effectiveRegistrationNumber,
-      expiration_date,
-      registration_date,
+      cleanExpDate,
+      cleanRegDate,
       effectivePlateNo,
       vehicle.engine_no,
       vehicle.chassis_no,
-      registration_no, // The OLD registration number for the WHERE clause
+      registration_no, 
     ]);
 
     if (result.affectedRows === 0) {
