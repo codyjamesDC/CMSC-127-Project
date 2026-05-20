@@ -104,6 +104,7 @@ export default function Drivers() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [errors, setErrors] = useState({});
 
   const load = async () => {
     setLoading(true);
@@ -262,11 +263,17 @@ export default function Drivers() {
   };
 
   const handleSave = async () => {
-    const errors = validateForm(form, driverRules);
-    if (Object.keys(errors).length > 0) {
-      setMsg(`Error: ${Object.values(errors)[0]}`);
+    const validationErrors = validateForm(form, driverRules);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setMsg(`Error: ${Object.values(validationErrors)[0]}`);
+      // focus first invalid field if present
+      const firstField = Object.keys(validationErrors)[0];
+      const el = document.getElementById(`driver-${firstField}`) || document.getElementById(firstField);
+      if (el && typeof el.focus === 'function') el.focus();
       return;
     }
+    setErrors({});
     setSaving(true);
     try {
       const payload = {
@@ -313,14 +320,17 @@ export default function Drivers() {
       <div className="form-group full">
         <label htmlFor="driver-license_no" className="form-label">License Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="driver-license_no" className="form-control" name="license_no" value={form.license_no} onChange={handleChange} placeholder="N01-23-456789" disabled={modal === 'edit'} />
+        {errors.license_no && <div className="field-error">{errors.license_no}</div>}
       </div>
       <div className="form-group">
         <label htmlFor="driver-fname" className="form-label">First Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="driver-fname" className="form-control" name="fname" value={form.fname} onChange={handleChange} placeholder="Juan" />
+        {errors.fname && <div className="field-error">{errors.fname}</div>}
       </div>
       <div className="form-group">
         <label htmlFor="driver-lname" className="form-label">Last Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="driver-lname" className="form-control" name="lname" value={form.lname} onChange={handleChange} placeholder="Dela Cruz" />
+        {errors.lname && <div className="field-error">{errors.lname}</div>}
       </div>
       <div className="form-group">
         <label htmlFor="driver-mname" className="form-label">Middle Name</label>
@@ -332,31 +342,37 @@ export default function Drivers() {
           value={form.bday?.split('T')[0] ?? ''}
           max={new Date().toISOString().split('T')[0]}
           onChange={handleChange} />
+        {errors.bday && <div className="field-error">{errors.bday}</div>}
       </div>
       <div className="form-group">
         <label htmlFor="driver-sex" className="form-label">Sex <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <select id="driver-sex" className="form-control" name="sex" value={form.sex} onChange={handleChange}>
           {SEXES.map(s => <option key={s}>{s}</option>)}
         </select>
+        {errors.sex && <div className="field-error">{errors.sex}</div>}
       </div>
       <div className="form-group">
         <label htmlFor="driver-contact_no" className="form-label">Contact No. <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="driver-contact_no" className="form-control" name="contact_no" value={form.contact_no} onChange={handleChange} placeholder="09171234567" />
+        {errors.contact_no && <div className="field-error">{errors.contact_no}</div>}
       </div>
 
       <div className="form-group">
         <label htmlFor="driver-nationality" className="form-label">Nationality <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="driver-nationality" className="form-control" name="nationality" value={form.nationality} onChange={handleChange} placeholder="Filipino" />
+        {errors.nationality && <div className="field-error">{errors.nationality}</div>}
       </div>
 
       <div className="form-group">
         <label htmlFor="driver-height_cm" className="form-label">Height (cm) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="driver-height_cm" className="form-control" type="number" step="0.01" min="0" name="height_cm" value={form.height_cm} onChange={handleChange} placeholder="170" />
+        {errors.height_cm && <div className="field-error">{errors.height_cm}</div>}
       </div>
 
       <div className="form-group">
         <label htmlFor="driver-weight_kg" className="form-label">Weight (kg) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="driver-weight_kg" className="form-control" type="number" step="0.01" min="0" name="weight_kg" value={form.weight_kg} onChange={handleChange} placeholder="65" />
+        {errors.weight_kg && <div className="field-error">{errors.weight_kg}</div>}
       </div>
 
       <div className="form-group">
@@ -364,6 +380,7 @@ export default function Drivers() {
         <select id="driver-eye_color" className="form-control" name="eye_color" value={form.eye_color} onChange={handleChange}>
           {EYE_COLORS.map(color => <option key={color}>{color}</option>)}
         </select>
+        {errors.eye_color && <div className="field-error">{errors.eye_color}</div>}
       </div>
 
       <div className="form-group">
@@ -371,12 +388,14 @@ export default function Drivers() {
         <select id="driver-blood_type" className="form-control" name="blood_type" value={form.blood_type} onChange={handleChange}>
           {BLOOD_TYPES.map(type => <option key={type}>{type}</option>)}
         </select>
+        {errors.blood_type && <div className="field-error">{errors.blood_type}</div>}
       </div>
 
       <div className="form-group full">
       <label className="form-label">Mother's Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <div style={{ display: 'flex', gap: 8 }}>
           <input id="driver-mother_fname" className="form-control" style={{ flex: 1 }} name="mother_fname" value={form.mother_fname} onChange={handleChange} placeholder="Mother First" />
+          {errors.mother_fname && <div className="field-error">{errors.mother_fname}</div>}
           <input id="driver-mother_mname" className="form-control" style={{ flex: 1 }} name="mother_mname" value={form.mother_mname} onChange={handleChange} placeholder="Mother Middle" />
           <input id="driver-mother_lname" className="form-control" style={{ flex: 1 }} name="mother_lname" value={form.mother_lname} onChange={handleChange} placeholder="Mother Last" />
         </div>
@@ -386,6 +405,7 @@ export default function Drivers() {
       <label className="form-label">Father's Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <div style={{ display: 'flex', gap: 8 }}>
           <input id="driver-father_fname" className="form-control" style={{ flex: 1 }} name="father_fname" value={form.father_fname} onChange={handleChange} placeholder="Father First" />
+          {errors.father_fname && <div className="field-error">{errors.father_fname}</div>}
           <input id="driver-father_mname" className="form-control" style={{ flex: 1 }} name="father_mname" value={form.father_mname} onChange={handleChange} placeholder="Father Middle" />
           <input id="driver-father_lname" className="form-control" style={{ flex: 1 }} name="father_lname" value={form.father_lname} onChange={handleChange} placeholder="Father Last" />
         </div>
@@ -394,11 +414,13 @@ export default function Drivers() {
       <div className="form-group">
         <label htmlFor="driver-emrg_contact_person" className="form-label">Emergency Contact Person <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="driver-emrg_contact_person" className="form-control" name="emrg_contact_person" value={form.emrg_contact_person} onChange={handleChange} placeholder="Full name" />
+        {errors.emrg_contact_person && <div className="field-error">{errors.emrg_contact_person}</div>}
       </div>
 
       <div className="form-group">
         <label htmlFor="driver-emrg_contact_no" className="form-label">Emergency Contact No. <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="driver-emrg_contact_no" className="form-control" name="emrg_contact_no" value={form.emrg_contact_no} onChange={handleChange} placeholder="09171234567" />
+        {errors.emrg_contact_no && <div className="field-error">{errors.emrg_contact_no}</div>}
       </div>
 
       <div className="form-group full" style={{ background: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 8 }}>
