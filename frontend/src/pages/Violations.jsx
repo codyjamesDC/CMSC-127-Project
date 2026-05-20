@@ -8,6 +8,7 @@ import useSortableTable from '../hooks/useSortableTable';
 const VIOLATION_TYPES = ['Overspeeding', 'Reckless Driving', 'Illegal Parking', 'Beating Red Light', 'No Helmet', 'No Seatbelt', 'Drunk Driving', 'Illegal Overtaking', 'Obstruction', 'Others'];
 const STATUSES = ['Unpaid', 'Paid', 'Contested'];
 
+// MODIFIED: Replaced individual violation fields with an array to support multiple violations
 const emptyForm = {
   location: '',
   date: '',
@@ -15,16 +16,14 @@ const emptyForm = {
   apprehending_officer: '',
   license_no: '',
   plate_no: '',
-  violation_type: 'Overspeeding',
-  fine_amount: '',
+  violations: [{ violation_name: 'Overspeeding', fine_amount: '' }],
 };
 
+// MODIFIED: Removed violation_type and fine_amount from strict root rules since they are now in an array
 const ticketRules = {
   location:             { required: true },
   date:                 { required: true, notFuture: true,
                           msg: 'Violation date cannot be in the future.' },
-  violation_type:       { required: true },
-  fine_amount:          { required: true, type: 'number' },
   apprehending_officer: { required: true },
 };
 
@@ -71,7 +70,8 @@ export default function Violations() {
   useEffect(() => { load(); }, []);
 
   const filtered = violations.filter(v => {
-    const violationName = v.violations?.[0]?.violation_name || '';
+    // MODIFIED: Map through all violations to allow searching by any violation type in the ticket
+    const violationName = v.violations?.map(vi => vi.violation_name).join(', ') || '';
     const driverRef = v.driver_name || v.license_no || '';
     const ticketIdString = v.ticket_id ? `TKT-${String(v.ticket_id).padStart(5, '0')}` : '';
 
@@ -94,8 +94,10 @@ export default function Violations() {
       apprehending_officer: v.apprehending_officer ?? '',
       license_no: v.license_no ?? '',
       plate_no: v.plate_no ?? '',
-      violation_type: v.violations?.[0]?.violation_name ?? 'Overspeeding',
-      fine_amount: v.violations?.[0]?.fine_amount ?? '',
+      // MODIFIED: Map existing violations to the form state, or fallback to default
+      violations: v.violations?.length > 0 
+        ? v.violations.map(vi => ({ violation_name: vi.violation_name, fine_amount: vi.fine_amount })) 
+        : [{ violation_name: 'Overspeeding', fine_amount: '' }],
     });
     setSelected(v);
     setModal('edit');
@@ -104,12 +106,30 @@ export default function Violations() {
 
   const openView = (v) => { setSelected(v); setModal('view'); };
 
+  // NEW: Helper functions to handle dynamic violation rows
+  const handleViolationChange = (index, field, value) => {
+    const newViolations = [...form.violations];
+    newViolations[index][field] = value;
+    setForm({ ...form, violations: newViolations });
+  };
+
+  const addViolation = () => {
+    setForm({ ...form, violations: [...form.violations, { violation_name: 'Overspeeding', fine_amount: '' }] });
+  };
+
+  const removeViolation = (index) => {
+    const newViolations = [...form.violations];
+    newViolations.splice(index, 1);
+    setForm({ ...form, violations: newViolations });
+  };
+
   const handleSave = async () => {
     const errors = validateForm(form, ticketRules);
     if (Object.keys(errors).length > 0) {
       setMsg(`Error: ${Object.values(errors)[0]}`);
       return;
     }
+    
     setSaving(true);
     try {
       if (!form.license_no) { setMsg('Error: Please select a driver.'); setSaving(false); return; }
@@ -117,6 +137,15 @@ export default function Violations() {
 
       const selectedVehicle = vehicles.find(v => v.plate_no === form.plate_no);
       if (!selectedVehicle) { setMsg('Error: Selected vehicle not found.'); setSaving(false); return; }
+
+      // MODIFIED: Manual validation for the dynamic violations array
+      if (!form.violations || form.violations.length === 0) {
+        setMsg('Error: At least one violation is required.'); setSaving(false); return;
+      }
+      for (let i = 0; i < form.violations.length; i++) {
+        if (!form.violations[i].violation_name) { setMsg(`Error: Violation type is required in row ${i + 1}.`); setSaving(false); return; }
+        if (form.violations[i].fine_amount === '' || isNaN(form.violations[i].fine_amount)) { setMsg(`Error: Valid fine amount is required in row ${i + 1}.`); setSaving(false); return; }
+      }
 
       const payload = {
         location: form.location,
@@ -127,12 +156,11 @@ export default function Violations() {
         plate_no: selectedVehicle.plate_no,
         engine_no: selectedVehicle.engine_no,
         chassis_no: selectedVehicle.chassis_no,
-        violations: [
-          {
-            violation_name: form.violation_type,
-            fine_amount: Number(form.fine_amount),
-          },
-        ],
+        // MODIFIED: Pass the array of violations mapped as numbers
+        violations: form.violations.map(vi => ({
+          violation_name: vi.violation_name,
+          fine_amount: Number(vi.fine_amount),
+        })),
       };
 
       if (modal === 'add') {
@@ -162,13 +190,6 @@ export default function Violations() {
   const FormFields = () => (
     <div className="form-grid">
       <div className="form-group">
-        <label className="form-label">Violation Type <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" name="violation_type" list="violation-types-list" value={form.violation_type} onChange={handleChange} placeholder="e.g. Overspeeding" />
-        <datalist id="violation-types-list">
-          {VIOLATION_TYPES.map(t => <option key={t} value={t} />)}
-        </datalist>
-      </div>
-      <div className="form-group">
         <label className="form-label">Status</label>
         <select className="form-control" name="violation_status" value={form.violation_status} onChange={handleChange}>
           {STATUSES.map(s => <option key={s}>{s}</option>)}
@@ -181,31 +202,44 @@ export default function Violations() {
           max={today}
           onChange={handleChange} />
       </div>
-      <div className="form-group">
-        <label className="form-label">Fine Amount (₱)</label>
-        <input className="form-control" type="number" name="fine_amount" value={form.fine_amount} onChange={handleChange} placeholder="2000" />
-      </div>
       <div className="form-group full">
         <label className="form-label">Location</label>
         <input className="form-control" name="location" value={form.location} onChange={handleChange} placeholder="EDSA, Quezon City" />
       </div>
       <div className="form-group">
-        <label className="form-label">Apprehending Officer</label>
+        <label className="form-label">Apprehending Officer <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" name="apprehending_officer" value={form.apprehending_officer} onChange={handleChange} placeholder="PO1 Juan Dela Cruz" />
       </div>
       <div className="form-group">
-        <label className="form-label">Driver</label>
+        <label className="form-label">Driver <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <select className="form-control" name="license_no" value={form.license_no} onChange={handleChange}>
           <option value="">— Select Driver —</option>
           {drivers.map(d => <option key={d.license_no} value={d.license_no}>{d.full_name} · {d.license_no}</option>)}
         </select>
       </div>
       <div className="form-group">
-        <label className="form-label">Vehicle</label>
+        <label className="form-label">Vehicle <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <select className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange}>
           <option value="">— Select Vehicle —</option>
           {vehicles.map(v => <option key={v.plate_no} value={v.plate_no}>{v.plate_no} · {v.make} {v.model}</option>)}
         </select>
+      </div>
+
+      {/* MODIFIED: Dynamic Violations Section */}
+      <div className="form-group full" style={{ background: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 8 }}>
+        <label className="form-label">Violations <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        {form.violations.map((vio, i) => (
+          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+            <select className="form-control" style={{ flex: 2 }} value={vio.violation_name} onChange={e => handleViolationChange(i, 'violation_name', e.target.value)}>
+              {VIOLATION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <input className="form-control" style={{ flex: 1 }} type="number" placeholder="Fine (₱)" value={vio.fine_amount} onChange={e => handleViolationChange(i, 'fine_amount', e.target.value)} />
+            {form.violations.length > 1 && (
+              <button type="button" className="btn btn-danger btn-sm" onClick={() => removeViolation(i)}>✕</button>
+            )}
+          </div>
+        ))}
+        <button type="button" className="btn btn-secondary btn-sm" onClick={addViolation}>+ Add Violation</button>
       </div>
     </div>
   );
@@ -260,7 +294,7 @@ export default function Violations() {
                   <SortableHeader label="Plate No." sortKey="plate_no"/>
                   <SortableHeader label="Date" sortKey="date"/>
                   <SortableHeader label="Location" sortKey="location"/>
-                  <SortableHeader label="Fine (₱)" sortKey="fine_amount"/>
+                  <SortableHeader label="Total Fine (₱)" sortKey="fine_amount"/>
                   <SortableHeader label="Status" sortKey="violation_status"/>
                   <th>Actions</th>
                 </tr>
@@ -275,12 +309,18 @@ export default function Violations() {
                         {v.ticket_id ? `TKT-${String(v.ticket_id).padStart(5, '0')}` : '—'}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 600 }}>{v.violations?.[0]?.violation_name ?? '—'}</td>
+                    {/* MODIFIED: Join violations array to display multiple violations */}
+                    <td style={{ fontWeight: 600 }}>
+                      {v.violations?.map(vi => vi.violation_name).join(', ') || '—'}
+                    </td>
                     <td style={{ fontSize: 12 }}>{v.driver_name ?? v.license_no ?? '—'}</td>
                     <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--lto-blue)', fontSize: 12 }}>{v.plate_no ?? '—'}</td>
                     <td style={{ fontSize: 12 }}>{v.date ? new Date(v.date).toLocaleDateString('en-PH') : '—'}</td>
                     <td style={{ fontSize: 12 }}>{v.location ?? '—'}</td>
-                    <td style={{ fontWeight: 700 }}>₱{Number(v.violations?.[0]?.fine_amount ?? 0).toLocaleString()}</td>
+                    {/* MODIFIED: Reduce violations array to calculate sum total fine */}
+                    <td style={{ fontWeight: 700 }}>
+                      ₱{v.violations?.reduce((sum, vi) => sum + Number(vi.fine_amount || 0), 0).toLocaleString()}
+                    </td>
                     <td><StatusBadge status={v.violation_status} /></td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -314,10 +354,12 @@ export default function Violations() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {[
               ['Ticket ID', selected.ticket_id ? `TKT-${String(selected.ticket_id).padStart(5, '0')}` : '—'],
-              ['Violation Type', selected.violations?.[0]?.violation_name],
+              /* MODIFIED: Display multiple violations in view modal */
+              ['Violation(s)', selected.violations?.map(vi => vi.violation_name).join(', ') || '—'],
               ['Status', selected.violation_status],
               ['Date', selected.date ? new Date(selected.date).toLocaleDateString('en-PH') : '—'],
-              ['Fine Amount', `₱${Number(selected.violations?.[0]?.fine_amount ?? 0).toLocaleString()}`],
+              /* MODIFIED: Display sum total fine in view modal */
+              ['Total Fine', `₱${selected.violations?.reduce((sum, vi) => sum + Number(vi.fine_amount || 0), 0).toLocaleString()}`],
               ['Location', selected.location],
               ['Officer', selected.apprehending_officer ?? '—'],
               ['Driver', selected.driver_name ?? selected.license_no ?? '—'],
