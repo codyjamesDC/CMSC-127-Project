@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { registrationsApi, vehiclesApi } from '../api/client';
 import { validateForm } from '../utils/validation';
+import { showConfirm } from '../utils/confirm';
+import { showToast } from '../utils/toast';
 import useSortableTable from '../hooks/useSortableTable';
 
 const emptyForm = {
@@ -108,7 +110,9 @@ export default function Registrations() {
       }
 
       await load();
-      setTimeout(() => { setModal(null); setMsg(''); }, 600);
+      setModal(null);
+      setMsg('');
+      showToast('Registration saved', 'success', 3000);
     } catch (e) {
       setMsg('Error: ' + (e.response?.data?.message ?? e.message));
     }
@@ -126,9 +130,10 @@ export default function Registrations() {
   };
 
   const handleDelete = async (r) => {
-    if (!window.confirm(`Delete registration "${r.registration_number ?? r.registration_no}"?`)) return;
-    try { await registrationsApi.delete(r.registration_no ?? r.registration_number); load(); }
-    catch (e) { alert('Delete failed: ' + (e.response?.data?.message ?? e.message)); }
+    const ok = await showConfirm(`Delete registration \"${r.registration_number ?? r.registration_no}\"? This cannot be undone.`);
+    if (!ok) return;
+    try { await registrationsApi.delete(r.registration_no ?? r.registration_number); await load(); showToast('Registration deleted', 'success'); }
+    catch (e) { showToast('Delete failed: ' + (e.response?.data?.message ?? e.message), 'error'); }
   };
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -136,12 +141,12 @@ export default function Registrations() {
   const FormFields = () => (
     <div className="form-grid">
       <div className="form-group full">
-        <label className="form-label">Registration Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input className="form-control" name="registration_number" value={form.registration_number} onChange={handleChange} placeholder="REG-2025-00001" />
+        <label htmlFor="reg-registration_number" className="form-label">Registration Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <input id="reg-registration_number" className="form-control" name="registration_number" value={form.registration_number} onChange={handleChange} placeholder="REG-2025-00001" />
       </div>
       <div className="form-group full">
-        <label className="form-label">Vehicle <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <select className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange}>
+        <label htmlFor="reg-plate_no" className="form-label">Vehicle <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+        <select id="reg-plate_no" className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange}>
           <option value="">— Select Vehicle —</option>
           {vehicles.map(v => (
             <option key={v.plate_no} value={v.plate_no}>
@@ -150,9 +155,9 @@ export default function Registrations() {
           ))}
         </select>
       </div>
-<div className="form-group">
-        <label className="form-label">Registration Date</label>
-        <input className="form-control" type="date" name="registration_date"
+      <div className="form-group">
+        <label htmlFor="reg-registration_date" className="form-label">Registration Date</label>
+        <input id="reg-registration_date" className="form-control" type="date" name="registration_date"
           value={form.registration_date?.split('T')[0] ?? ''}
           max={new Date().toISOString().split('T')[0]}
           onChange={handleChange} />
@@ -160,7 +165,7 @@ export default function Registrations() {
 
       <div className="form-group">
         {/* 🛑 NEW: Renew Button inside the label */}
-        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <label htmlFor="reg-expiration_date" className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>Expiration Date</span>
           {modal === 'edit' && (
             <button type="button" onClick={handleRenew} style={{ background: 'var(--lto-blue)', color: 'white', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}>
@@ -168,7 +173,7 @@ export default function Registrations() {
             </button>
           )}
         </label>
-        <input className="form-control" type="date" name="expiration_date"
+        <input id="reg-expiration_date" className="form-control" type="date" name="expiration_date"
           value={form.expiration_date?.split('T')[0] ?? ''}
           min={form.registration_date?.split('T')[0] || undefined}
           onChange={handleChange} />
