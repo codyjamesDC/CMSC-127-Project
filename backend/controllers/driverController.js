@@ -80,11 +80,6 @@ export const createDriver = async (req, res) => {
       emrg_contact_person, emrg_contact_no, agency_code
     } = req.body;
 
-    // Guard clause looks for the correct variable names now
-    if (!license_no || !fname || !lname || !bday || !sex) {
-      return res.status(400).json({ success: false, message: 'Missing required fields: license_no, fname, lname, bday, sex' });
-    }
-
     const [existing] = await conn.query(driverQueries.selectByLicense, [license_no]);
     if (existing.length > 0) {
       await conn.rollback();

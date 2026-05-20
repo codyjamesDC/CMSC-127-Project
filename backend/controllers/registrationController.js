@@ -64,10 +64,6 @@ export const createRegistration = async (req, res) => {
       registration_number, registration_date, expiration_date, plate_no,
     } = req.body;
 
-    if (!registration_number || !plate_no) {
-      return res.status(400).json({ success: false, message: 'registration_number and plate_no are required' });
-    }
-
     // 🛑 FIX: Strip ISO timestamps so MySQL accepts them
     const cleanRegDate = registration_date ? registration_date.split('T')[0] : null;
     const cleanExpDate = expiration_date ? expiration_date.split('T')[0] : null;

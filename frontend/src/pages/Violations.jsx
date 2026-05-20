@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { violationsApi, driversApi, vehiclesApi } from '../api/client';
+import { validateForm } from '../utils/validation';
 
 const VIOLATION_TYPES = ['Overspeeding', 'Reckless Driving', 'Illegal Parking', 'Beating Red Light', 'No Helmet', 'No Seatbelt', 'Drunk Driving', 'Illegal Overtaking', 'Obstruction', 'Others'];
 // P0 1.2 FIX: Title Case to match DB seeds ('Unpaid'/'Paid' not 'unpaid'/'paid')
@@ -17,6 +18,14 @@ const emptyForm = {
   plate_no: '',
   violation_type: 'Overspeeding',
   fine_amount: '',
+};
+
+const ticketRules = {
+  location: { required: true },
+  date: { required: true },
+  violation_type: { required: true },
+  fine_amount: { required: true, type: 'number' },
+  apprehending_officer: { required: true }
 };
 
 function StatusBadge({ status }) {
@@ -98,6 +107,12 @@ export default function Violations() {
   const openView = (v) => { setSelected(v); setModal('view'); };
 
   const handleSave = async () => {
+    // Validate before proceeding
+    const errors = validateForm(form, ticketRules);
+    if (Object.keys(errors).length > 0) {
+      setMsg(`Error: ${Object.values(errors)[0]}`);
+      return;
+    }
     setSaving(true);
     try {
       if (!form.license_no) { setMsg('Error: Please select a driver.'); setSaving(false); return; }

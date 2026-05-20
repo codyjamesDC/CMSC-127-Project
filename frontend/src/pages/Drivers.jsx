@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { driversApi } from '../api/client';
+import { validateForm } from '../utils/validation';
 
 const LICENSE_TYPES = ['Student Permit', 'Non-Professional', 'Professional'];
 const LICENSE_STATUSES = ['Active', 'Expired', 'Suspended', 'Revoked'];
 const SEXES = ['M', 'F'];
+
+const driverRules = {
+  license_no: { required: true },
+  fname: { required: true },
+  lname: { required: true },
+  bday: { required: true },
+  sex: { required: true }
+}
 
 const emptyForm = {
   license_no: '',
@@ -131,6 +140,11 @@ export default function Drivers() {
   };
 
   const handleSave = async () => {
+    const errors = validateForm(form, driverRules);
+    if (Object.keys(errors).length > 0) {
+      setMsg(`Error: ${Object.values(errors)[0]}`);
+      return;
+    }
     setSaving(true);
     try {
       const payload = {

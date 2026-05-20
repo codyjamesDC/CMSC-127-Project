@@ -72,10 +72,6 @@ export const createVehicle = async (req, res) => {
       registrations
     } = req.body;
 
-    if (!plate_no || !engine_no || !chassis_no || !license_no) {
-      return res.status(400).json({ success: false, message: 'Missing required fields: plate_no, engine_no, chassis_no, license_no' });
-    }
-
     // 🛑 NEW VALIDATION: Check for duplicate Plate Number
     const [existing] = await conn.query(vehicleQueries.selectByPlate, [plate_no]);
     if (existing.length > 0) {

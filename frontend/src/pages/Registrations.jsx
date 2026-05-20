@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { registrationsApi, vehiclesApi } from '../api/client';
+import { validateForm } from '../utils/validation';
 
 // P0 1.1 FIX: emptyForm uses plate_no (not vehicle_id)
 const emptyForm = {
@@ -10,6 +11,11 @@ const emptyForm = {
   registration_date: '',
   expiration_date: '',
 };
+
+const registrationRules = {
+  registration_number: { required: true },
+  plate_no: { required: true }
+}
 
 function StatusBadge({ status }) {
   return <span className={`badge badge-${status}`}>{status}</span>;
@@ -69,6 +75,11 @@ export default function Registrations() {
   };
 
   const handleSave = async () => {
+    const errors = validateForm(form, registrationRules);
+    if (Object.keys(errors).length > 0) {
+      setMsg(`Error: ${Object.values(errors)[0]}`);
+      return;
+    }
     setSaving(true);
     try {
       // P0 1.1 FIX: payload sends plate_no directly (backend expects plate_no, not vehicle_id)

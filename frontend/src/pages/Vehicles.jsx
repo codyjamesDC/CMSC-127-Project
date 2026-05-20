@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { vehiclesApi, driversApi } from '../api/client';
+import { validateForm } from '../utils/validation';
 
 const VEHICLE_TYPES = ['Motorcycle', 'Sedan', 'Hatchback', 'SUV', 'Van', 'Truck', 'Bus'];
 const OWNERSHIP_TYPES = ['Private', 'For Hire'];
@@ -19,6 +20,13 @@ const emptyForm = {
   color: '',
   license_no: '',
 };
+
+const vehicleRules = {
+  plate_no: { required: true },
+  engine_no: { required: true },
+  chassis_no: { required: true },
+  license_no: { required: true }
+}
 
 // Defined outside component to prevent focus loss on re-render
 const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPES }) => (
@@ -157,6 +165,12 @@ export default function Vehicles() {
   const openView = (v) => { setSelected(v); setModal('view'); };
 
   const handleSave = async () => {
+    // Validate before proceeding
+    const errors = validateForm(form, vehicleRules);
+    if (Object.keys(errors).length > 0) {
+      setMsg(`Error: ${Object.values(errors)[0]}`);
+      return;
+    }
     setSaving(true);
     try {
       // P0 1.1 FIX: payload already uses correct backend field names — no remapping needed
