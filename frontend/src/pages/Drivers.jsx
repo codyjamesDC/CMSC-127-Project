@@ -66,7 +66,26 @@ const emptyForm = {
   agency_code: '',
   conditions: [],
   license_codes: [],
-  addresses: [],
+  addresses: [{ street: '', barangay: '', city: '', province: '', zip_code: '' }],
+};
+
+const createEmptyAddress = () => ({ street: '', barangay: '', city: '', province: '', zip_code: '' });
+
+const normalizeAddress = (address = {}) => ({
+  street: address.street ?? '',
+  barangay: address.barangay ?? '',
+  city: address.city ?? '',
+  province: address.province ?? '',
+  zip_code: address.zip_code ?? '',
+});
+
+const formatAddress = (address) => {
+  if (!address) return '';
+  if (typeof address === 'string') return address;
+  return [address.street, address.barangay, address.city, address.province, address.zip_code]
+    .map(value => String(value ?? '').trim())
+    .filter(Boolean)
+    .join(', ');
 };
 
 const formatLocalYYYYMMDD = (dateVal) => {
@@ -119,7 +138,7 @@ export default function Drivers() {
           issued_date: formatLocalYYYYMMDD(d.issued_date),
           expiry_date: formatLocalYYYYMMDD(d.expiry_date),
           full_name: [d.fname, d.mname, d.lname].filter(Boolean).join(' '),
-          addresses: d.addresses || [],
+          addresses: Array.isArray(d.addresses) ? d.addresses.map(normalizeAddress) : [],
           conditions: d.conditions || [],
           license_codes: d.license_codes || [],
         };
@@ -165,7 +184,7 @@ export default function Drivers() {
     const matchesSearch = !search.trim() || [
       d.full_name,
       d.license_no,
-      d.addresses.join(' '),
+      d.addresses.map(formatAddress).join(' '),
     ].some(field => field?.toLowerCase().includes(search.toLowerCase()));
     const matchesType = !filterType || d.license_type === filterType;
     const matchesStatus = !filterStatus || d.license_status?.toLowerCase() === filterStatus.toLowerCase();;
@@ -177,7 +196,7 @@ export default function Drivers() {
   const openEdit = (d) => {
     setForm({
       ...d,
-      addresses: d.addresses?.length ? d.addresses : [],
+      addresses: d.addresses?.length ? d.addresses.map(normalizeAddress) : [createEmptyAddress()],
       conditions: d.conditions || [],
       license_codes: d.license_codes || [],
     });
@@ -188,12 +207,22 @@ export default function Drivers() {
 
   const openView = (d) => { setSelected(d); setModal('view'); };
 
-  const handleArrayChange = (field, index, value) => {
+  const handleArrayChange = (field, index, value, key) => {
     const newArray = [...form[field]];
-    newArray[index] = value;
+    if (key) {
+      newArray[index] = {
+        ...newArray[index],
+        [key]: value,
+      };
+    } else {
+      newArray[index] = value;
+    }
     setForm({ ...form, [field]: newArray });
   };
-  const addArrayItem = (field) => setForm({ ...form, [field]: [...form[field], ''] });
+  const addArrayItem = (field) => setForm({
+    ...form,
+    [field]: [...form[field], field === 'addresses' ? createEmptyAddress() : ''],
+  });
   const removeArrayItem = (field, index) => {
     const newArray = [...form[field]];
     newArray.splice(index, 1);
@@ -281,7 +310,9 @@ export default function Drivers() {
         bday: form.bday?.split('T')[0],
         issued_date: form.issued_date?.split('T')[0],
         expiry_date: form.expiry_date?.split('T')[0],
-        addresses: form.addresses.filter(a => a.trim() !== ''),
+        addresses: form.addresses
+          .map(normalizeAddress)
+          .filter(addr => Object.values(addr).some(value => String(value).trim() !== '')),
         conditions: form.conditions.filter(c => c.trim() !== ''),
         license_codes: form.license_codes.filter(lc => lc.trim() !== ''),
       };
@@ -427,9 +458,19 @@ export default function Drivers() {
         <label className="form-label">Addresses</label>
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('addresses')} style={{ marginBottom: 8 }}>+ Add Address</button>
         {form.addresses.map((addr, i) => (
-          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input id={`driver-address-${i}`} className="form-control" style={{ flex: 1, minWidth: 0 }} value={addr} onChange={e => handleArrayChange('addresses', i, e.target.value)} placeholder="Brgy., City, Province" />
-            <button type="button" className="btn btn-danger btn-sm" onClick={() => removeArrayItem('addresses', i)} aria-label={`Remove Address ${i+1}`}>✕</button>
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+              <input id={`driver-address-${i}-street`} className="form-control" value={addr.street ?? ''} onChange={e => handleArrayChange('addresses', i, e.target.value, 'street')} placeholder="Street / House No." />
+              <input id={`driver-address-${i}-barangay`} className="form-control" value={addr.barangay ?? ''} onChange={e => handleArrayChange('addresses', i, e.target.value, 'barangay')} placeholder="Barangay" />
+              <input id={`driver-address-${i}-city`} className="form-control" value={addr.city ?? ''} onChange={e => handleArrayChange('addresses', i, e.target.value, 'city')} placeholder="City" />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, alignItems: 'start' }}>
+              <input id={`driver-address-${i}-province`} className="form-control" value={addr.province ?? ''} onChange={e => handleArrayChange('addresses', i, e.target.value, 'province')} placeholder="Province" />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input id={`driver-address-${i}-zip`} className="form-control" value={addr.zip_code ?? ''} onChange={e => handleArrayChange('addresses', i, e.target.value, 'zip_code')} placeholder="Zip Code" />
+                <button type="button" className="btn btn-danger btn-sm" onClick={() => removeArrayItem('addresses', i)} aria-label={`Remove Address ${i+1}`}>✕</button>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -570,7 +611,7 @@ export default function Drivers() {
                     <td style={{ fontSize: 12 }}>
                       {d.addresses.length > 0 ? (
                         <>
-                          {d.addresses[0]}
+                          {formatAddress(d.addresses[0])}
                           {d.addresses.length > 1 && <span style={{ color: 'var(--lto-blue)', fontWeight: 'bold' }}> (+{d.addresses.length - 1})</span>}
                         </>
                       ) : '—'}
@@ -652,7 +693,7 @@ export default function Drivers() {
                     ['Conditions', selected.conditions?.length ? selected.conditions.join(', ') : 'None'],
                     ['License Codes', selected.license_codes?.length ? selected.license_codes.join(', ') : 'None'],
                     ['Organ Donor', selected.organ_donor ? 'Yes' : 'No'],
-                    ['Addresses', selected.addresses?.length ? selected.addresses.join(' | ') : '—'],
+                    ['Addresses', selected.addresses?.length ? selected.addresses.map(formatAddress).join(' | ') : '—'],
                   ]
                 }
               ];
