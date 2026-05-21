@@ -242,7 +242,7 @@ export default function Violations() {
       </div>
 
       {/* MODIFIED: Dynamic Violations Section */}
-      <div className="form-group full" style={{ background: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 8 }}>
+      <div className="form-group full">
         <label className="form-label">Violations <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         {form.violations.map((vio, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
