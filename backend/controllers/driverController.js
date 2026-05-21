@@ -5,6 +5,16 @@ import { conditionQueries } from '../sql/jsQueries/conditionQueries.js';
 import { licenseCodeQueries } from '../sql/jsQueries/licenseCodeQueries.js';
 import { addressQueries } from '../sql/jsQueries/addressQueries.js';
 
+const normalizeAddress = (address = {}) => ({
+  street: String(address.street ?? '').trim(),
+  barangay: String(address.barangay ?? '').trim(),
+  city: String(address.city ?? '').trim(),
+  province: String(address.province ?? '').trim(),
+  zip_code: String(address.zip_code ?? '').trim(),
+});
+
+const hasAddressValue = (address) => Object.values(address).some(value => value !== '');
+
 // ==========================================
 // READ: Get all drivers
 // ==========================================
@@ -23,7 +33,9 @@ export const getAllDrivers = async (req, res) => {
     // 3. Map the supporting arrays into the drivers
     const mappedDrivers = drivers.map(d => ({
       ...d,
-      addresses: addresses.filter(a => a.license_no === d.license_no).map(a => a.address),
+      addresses: addresses
+        .filter(a => a.license_no === d.license_no)
+        .map(({ license_no, ...address }) => address),
       conditions: conditions.filter(c => c.license_no === d.license_no).map(c => c.condition),
       license_codes: codes.filter(c => c.license_no === d.license_no).map(c => c.license_code)
     }));
@@ -53,7 +65,7 @@ export const getDriverByLicense = async (req, res) => {
     driver.license_codes = codeRows.map(row => row.license_code);
 
     const [addressRows] = await pool.query(addressQueries.selectByLicense, [license_no]);
-    driver.addresses = addressRows.map(row => row.address);
+    driver.addresses = addressRows.map(({ license_no, ...address }) => address);
     
     res.status(200).json({ success: true, data: driver });
   } catch (error) {
@@ -102,8 +114,18 @@ export const createDriver = async (req, res) => {
     await conn.query(driverQueries.insert, driverValues);
 
     if (addresses?.length) {
-      for (const addr of addresses) {
-        if (addr.trim()) await conn.query(addressQueries.insert, [license_no, addr]);
+      for (const rawAddress of addresses) {
+        const addr = normalizeAddress(rawAddress);
+        if (hasAddressValue(addr)) {
+          await conn.query(addressQueries.insert, [
+            license_no,
+            addr.street,
+            addr.barangay,
+            addr.city,
+            addr.province,
+            addr.zip_code,
+          ]);
+        }
       }
     }
     if (conditions?.length) {
@@ -186,8 +208,18 @@ export const updateDriver = async (req, res) => {
 
     await conn.query(addressQueries.deleteAllForDriver, [effectiveLicense]);
     if (addresses?.length) {
-      for (const addr of addresses) {
-        if (addr.trim()) await conn.query(addressQueries.insert, [effectiveLicense, addr]);
+      for (const rawAddress of addresses) {
+        const addr = normalizeAddress(rawAddress);
+        if (hasAddressValue(addr)) {
+          await conn.query(addressQueries.insert, [
+            effectiveLicense,
+            addr.street,
+            addr.barangay,
+            addr.city,
+            addr.province,
+            addr.zip_code,
+          ]);
+        }
       }
     }
 
