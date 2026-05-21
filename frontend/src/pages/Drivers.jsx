@@ -608,38 +608,70 @@ export default function Drivers() {
       {modal === 'view' && selected && (
         <Modal title="👤 Driver Details" onClose={() => setModal(null)}
           footer={<><button className="btn btn-primary" onClick={() => openEdit(selected)}>Edit</button><button className="btn btn-secondary" onClick={() => setModal(null)}>Close</button></>}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            {[
-              ['Full Name', selected.full_name],
-              ['License No.', selected.license_no],
-              ['Middle Name', selected.mname || '—'],
-              ['Date of Birth', selected.bday ? new Date(selected.bday).toLocaleDateString('en-PH') : '—'],
-              ['Sex', selected.sex],
-              ['Nationality', selected.nationality],
-              ['Height (cm)', selected.height_cm],
-              ['Weight (kg)', selected.weight_kg],
-              ['Eye Color', selected.eye_color],
-              ['Blood Type', selected.blood_type],
-              ['Contact No.', selected.contact_no],
-              ['Organ Donor', selected.organ_donor ? 'Yes' : 'No'],
-              ['Mother Name', [selected.mother_fname, selected.mother_mname, selected.mother_lname].filter(Boolean).join(' ')],
-              ['Father Name', [selected.father_fname, selected.father_mname, selected.father_lname].filter(Boolean).join(' ')],
-              ['Emergency Contact Person', selected.emrg_contact_person],
-              ['Emergency Contact No.', selected.emrg_contact_no],
-              ['License Type', selected.license_type],
-              ['License Status', selected.license_status],
-              ['Issue Date', selected.issued_date ? new Date(selected.issued_date).toLocaleDateString('en-PH') : '—'],
-              ['Expiration Date', selected.expiry_date ? new Date(selected.expiry_date).toLocaleDateString('en-PH') : '—'],
-              ['Agency Code', selected.agency_code],
-              ['Conditions', selected.conditions?.length ? selected.conditions.join(', ') : 'None'],
-              ['License Codes', selected.license_codes?.length ? selected.license_codes.join(', ') : 'None'],
-              ['Addresses', selected.addresses?.length ? selected.addresses.join(' | ') : '—'],
-            ].map(([label, val]) => (
-              <div key={label} style={{ gridColumn: label === 'Addresses' ? '1 / -1' : undefined }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--lto-blue)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: 'Barlow Condensed, sans-serif' }}>{label}</div>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{val || '—'}</div>
-              </div>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {(() => {
+              const sections = [
+                {
+                  title: 'Personal',
+                  fields: [
+                    ['Full Name', selected.full_name],
+                    ['Middle Name', selected.mname || '—'],
+                    ['Date of Birth', selected.bday ? new Date(selected.bday).toLocaleDateString('en-PH') : '—'],
+                    ['Sex', selected.sex],
+                    ['Nationality', selected.nationality],
+                    ['Height (cm)', selected.height_cm],
+                    ['Weight (kg)', selected.weight_kg],
+                    ['Eye Color', selected.eye_color],
+                    ['Blood Type', selected.blood_type],
+                  ]
+                },
+                {
+                  title: 'Contact',
+                  fields: [
+                    ['Contact No.', selected.contact_no],
+                    ['Emergency Contact Person', selected.emrg_contact_person],
+                    ['Emergency Contact No.', selected.emrg_contact_no],
+                    ['Mother Name', [selected.mother_fname, selected.mother_mname, selected.mother_lname].filter(Boolean).join(' ')],
+                    ['Father Name', [selected.father_fname, selected.father_mname, selected.father_lname].filter(Boolean).join(' ')],
+                  ]
+                },
+                {
+                  title: 'License',
+                  fields: [
+                    ['License No.', selected.license_no],
+                    ['License Type', selected.license_type],
+                    ['License Status', selected.license_status],
+                    ['Issue Date', selected.issued_date ? new Date(selected.issued_date).toLocaleDateString('en-PH') : '—'],
+                    ['Expiration Date', selected.expiry_date ? new Date(selected.expiry_date).toLocaleDateString('en-PH') : '—'],
+                    ['Agency Code', selected.agency_code],
+                  ]
+                },
+                {
+                  title: 'Other',
+                  fields: [
+                    ['Conditions', selected.conditions?.length ? selected.conditions.join(', ') : 'None'],
+                    ['License Codes', selected.license_codes?.length ? selected.license_codes.join(', ') : 'None'],
+                    ['Organ Donor', selected.organ_donor ? 'Yes' : 'No'],
+                    ['Addresses', selected.addresses?.length ? selected.addresses.join(' | ') : '—'],
+                  ]
+                }
+              ];
+
+              return sections.map(section => (
+                <div key={section.title}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--lto-blue)', textTransform: 'uppercase', marginBottom: 8 }}>{section.title}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                    {section.fields.map(([label, val]) => (
+                      <div key={label} style={{ gridColumn: label === 'Addresses' ? '1 / -1' : undefined }}>
+                        <div className="form-label" style={{ marginBottom: 6 }}>{label}</div>
+                        <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>{val || '—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ height: 1, background: 'rgba(0,0,0,0.06)', marginTop: 12 }} />
+                </div>
+              ));
+            })()}
           </div>
         </Modal>
       )}
