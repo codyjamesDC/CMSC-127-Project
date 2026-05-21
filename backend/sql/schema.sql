@@ -40,8 +40,12 @@ CREATE TABLE IF NOT EXISTS `driver` (
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `driver_address` (
     license_no      VARCHAR(15)     NOT NULL,
-    address         VARCHAR(100)    NOT NULL,
-    PRIMARY KEY (`license_no`, `address`),
+    street          VARCHAR(100)    NOT NULL,
+    barangay        VARCHAR(50)     NOT NULL,
+    city            VARCHAR(50)     NOT NULL,
+    province        VARCHAR(50)     NOT NULL,
+    zip_code        VARCHAR(10)     NOT NULL,
+    PRIMARY KEY (`license_no`, `street`, `barangay`, `city`, `province`, `zip_code`),
     FOREIGN KEY (`license_no`) REFERENCES `driver`(`license_no`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
