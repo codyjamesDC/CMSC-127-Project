@@ -3,28 +3,39 @@
 USE `vehiclemanager`;
 
 -- ============================================================
--- DRIVER DATA
+-- DRIVER DATA (UPDATED LTO EXPIRATION RULES)
 -- ============================================================
 INSERT INTO `driver` VALUES
-('N01-23-456789', 'Juan', 'Dela Cruz', 'Santos', '1990-05-15', 'M', 'Filipino', 168.50, 70.00, 'Brown', 'O+', '09171234567', 1, 'Maria', 'Dela Cruz', 'Reyes', 'Pedro', 'Dela Cruz', 'Miguel', 'Maria Dela Cruz', '09181234567', 'Non-Professional', 'Active', '2020-03-10', '2025-03-10', 'LTO-NCR'),
+-- 1. Juan (Bday: May 15. Issued: Mar 10, 2020. Mar is before May. Expiry: 2020+4 = 2024-05-15)
+('N01-23-456789', 'Juan', 'Dela Cruz', 'Santos', '1990-05-15', 'M', 'Filipino', 168.50, 70.00, 'Brown', 'O+', '09171234567', 1, 'Maria', 'Dela Cruz', 'Reyes', 'Pedro', 'Dela Cruz', 'Miguel', 'Maria Dela Cruz', '09181234567', 'Non-Professional', 'Active', '2020-03-10', '2024-05-15', 'LTO-NCR'),
 
-('P02-22-654321', 'Maria', 'Santos', 'Garcia', '1985-08-22', 'F', 'Filipino', 160.00, 55.00, 'Brown', 'A+', '09281234567', 0, 'Carmen', 'Santos', 'Torres', 'Jose', 'Santos', 'Ramos', 'Jose Santos', '09191234567', 'Professional', 'Active', '2019-06-15', '2024-06-15', 'LTO-R4A'),
+-- 2. Maria (Bday: Aug 22. Issued: Jun 15, 2019. Jun is before Aug. Expiry: 2019+4 = 2023-08-22)
+('P02-22-654321', 'Maria', 'Santos', 'Garcia', '1985-08-22', 'F', 'Filipino', 160.00, 55.00, 'Brown', 'A+', '09281234567', 0, 'Carmen', 'Santos', 'Torres', 'Jose', 'Santos', 'Ramos', 'Jose Santos', '09191234567', 'Professional', 'Active', '2019-06-15', '2023-08-22', 'LTO-R4A'),
 
-('N03-21-789012', 'Carlos', 'Mendoza', 'Lopez', '1995-12-03', 'M', 'Filipino', 175.00, 80.00, 'Brown', 'B+', '09331234567', 1, 'Rosa', 'Mendoza', 'Cruz', 'Manuel', 'Mendoza', 'Diaz', 'Rosa Mendoza', '09201234567', 'Non-Professional', 'Active', '2021-01-20', '2026-01-20', 'LTO-R3'),
+-- 3. Carlos (Bday: Dec 3. Issued: Jan 20, 2021. Jan is before Dec. Expiry: 2021+4 = 2025-12-03)
+('N03-21-789012', 'Carlos', 'Mendoza', 'Lopez', '1995-12-03', 'M', 'Filipino', 175.00, 80.00, 'Brown', 'B+', '09331234567', 1, 'Rosa', 'Mendoza', 'Cruz', 'Manuel', 'Mendoza', 'Diaz', 'Rosa Mendoza', '09201234567', 'Non-Professional', 'Active', '2021-01-20', '2025-12-03', 'LTO-R3'),
 
-('P04-20-345678', 'Ana', 'Reyes', 'Fernandez', '1988-03-18', 'F', 'Filipino', 165.00, 58.00, 'Brown', 'AB+', '09451234567', 0, 'Lucia', 'Reyes', 'Martinez', 'Ramon', 'Reyes', 'Gonzales', 'Lucia Reyes', '09211234567', 'Professional', 'Active', '2018-09-05', '2023-09-05', 'LTO-R7'),
+-- 4. Ana (Bday: Mar 18. Issued: Sep 5, 2018. Sep is after Mar. Expiry: 2018+5 = 2023-03-18)
+('P04-20-345678', 'Ana', 'Reyes', 'Fernandez', '1988-03-18', 'F', 'Filipino', 165.00, 58.00, 'Brown', 'AB+', '09451234567', 0, 'Lucia', 'Reyes', 'Martinez', 'Ramon', 'Reyes', 'Gonzales', 'Lucia Reyes', '09211234567', 'Professional', 'Active', '2018-09-05', '2023-03-18', 'LTO-R7'),
 
-('N05-19-901234', 'Pedro', 'Aquino', 'Rivera', '1992-07-25', 'M', 'Filipino', 170.00, 75.00, 'Brown', 'O+', '09561234567', 1, 'Elena', 'Aquino', 'Morales', 'Luis', 'Aquino', 'Navarro', 'Elena Aquino', '09221234567', 'Non-Professional', 'Suspended', '2017-04-12', '2022-04-12', 'LTO-R1'),
+-- 5. Pedro (Bday: Jul 25. Issued: Apr 12, 2017. Apr is before Jul. Expiry: 2017+4 = 2021-07-25)
+('N05-19-901234', 'Pedro', 'Aquino', 'Rivera', '1992-07-25', 'M', 'Filipino', 170.00, 75.00, 'Brown', 'O+', '09561234567', 1, 'Elena', 'Aquino', 'Morales', 'Luis', 'Aquino', 'Navarro', 'Elena Aquino', '09221234567', 'Non-Professional', 'Suspended', '2017-04-12', '2021-07-25', 'LTO-R1'),
 
-('S06-24-567890', 'Sofia', 'Torres', 'Ramos', '2002-11-30', 'F', 'Filipino', 158.00, 50.00, 'Brown', 'A+', '09671234567', 0, 'Patricia', 'Torres', 'Castillo', 'Miguel', 'Torres', 'Ortiz', 'Patricia Torres', '09231234567', 'Student Permit', 'Active', '2024-02-01', '2025-02-01', 'LTO-NCR'),
+-- 6. Sofia (Bday: Nov 30. Issued: Feb 1, 2024. Feb is before Nov. Expiry: 2024+4 = 2028-11-30)
+('S06-24-567890', 'Sofia', 'Torres', 'Ramos', '2002-11-30', 'F', 'Filipino', 158.00, 50.00, 'Brown', 'A+', '09671234567', 0, 'Patricia', 'Torres', 'Castillo', 'Miguel', 'Torres', 'Ortiz', 'Patricia Torres', '09231234567', 'Student Permit', 'Active', '2024-02-01', '2028-11-30', 'LTO-NCR'),
 
-('P07-21-234567', 'Roberto', 'Cruz', 'Gomez', '1987-04-09', 'M', 'Filipino', 172.00, 78.00, 'Brown', 'B+', '09781234567', 1, 'Teresa', 'Cruz', 'Flores', 'Antonio', 'Cruz', 'Silva', 'Teresa Cruz', '09241234567', 'Professional', 'Active', '2020-07-18', '2025-07-18', 'LTO-R4A'),
+-- 7. Roberto (Bday: Apr 9. Issued: Jul 18, 2020. Jul is after Apr. Expiry: 2020+5 = 2025-04-09)
+('P07-21-234567', 'Roberto', 'Cruz', 'Gomez', '1987-04-09', 'M', 'Filipino', 172.00, 78.00, 'Brown', 'B+', '09781234567', 1, 'Teresa', 'Cruz', 'Flores', 'Antonio', 'Cruz', 'Silva', 'Teresa Cruz', '09241234567', 'Professional', 'Active', '2020-07-18', '2025-04-09', 'LTO-R4A'),
 
-('N08-22-890123', 'Isabel', 'Gonzales', 'Vargas', '1993-09-14', 'F', 'Filipino', 162.00, 56.00, 'Brown', 'O+', '09891234567', 0, 'Angelica', 'Gonzales', 'Herrera', 'Francisco', 'Gonzales', 'Mendez', 'Francisco Gonzales', '09251234567', 'Non-Professional', 'Active', '2021-11-22', '2026-11-22', 'LTO-R6'),
+-- 8. Isabel (Bday: Sep 14. Issued: Nov 22, 2021. Nov is after Sep. Expiry: 2021+5 = 2026-09-14)
+('N08-22-890123', 'Isabel', 'Gonzales', 'Vargas', '1993-09-14', 'F', 'Filipino', 162.00, 56.00, 'Brown', 'O+', '09891234567', 0, 'Angelica', 'Gonzales', 'Herrera', 'Francisco', 'Gonzales', 'Mendez', 'Francisco Gonzales', '09251234567', 'Non-Professional', 'Active', '2021-11-22', '2026-09-14', 'LTO-R6'),
 
-('N09-18-456780', 'Miguel', 'Fernandez', 'Castro', '1991-02-28', 'M', 'Filipino', 169.00, 72.00, 'Brown', 'A+', '09901234567', 1, 'Cristina', 'Fernandez', 'Jimenez', 'Rodrigo', 'Fernandez', 'Perez', 'Cristina Fernandez', '09261234567', 'Non-Professional', 'Expired', '2015-05-30', '2020-05-30', 'LTO-R2'),
+-- 9. Miguel (Bday: Feb 28. Issued: May 30, 2015. May is after Feb. Expiry: 2015+5 = 2020-02-28)
+('N09-18-456780', 'Miguel', 'Fernandez', 'Castro', '1991-02-28', 'M', 'Filipino', 169.00, 72.00, 'Brown', 'A+', '09901234567', 1, 'Cristina', 'Fernandez', 'Jimenez', 'Rodrigo', 'Fernandez', 'Perez', 'Cristina Fernandez', '09261234567', 'Non-Professional', 'Expired', '2015-05-30', '2020-02-28', 'LTO-R2'),
 
-('P10-23-678901', 'Carmen', 'Lopez', 'Sanchez', '1986-06-17', 'F', 'Filipino', 161.00, 54.00, 'Brown', 'AB+', '09011234567', 0, 'Gloria', 'Lopez', 'Ramirez', 'Eduardo', 'Lopez', 'Gutierrez', 'Eduardo Lopez', '09271234567', 'Professional', 'Active', '2022-03-25', '2027-03-25', 'LTO-R5');
+-- 10. Carmen (Bday: Jun 17. Issued: Mar 25, 2022. Mar is before Jun. Expiry: 2022+4 = 2026-06-17)
+('P10-23-678901', 'Carmen', 'Lopez', 'Sanchez', '1986-06-17', 'F', 'Filipino', 161.00, 54.00, 'Brown', 'AB+', '09011234567', 0, 'Gloria', 'Lopez', 'Ramirez', 'Eduardo', 'Lopez', 'Gutierrez', 'Eduardo Lopez', '09271234567', 'Professional', 'Active', '2022-03-25', '2026-06-17', 'LTO-R5');
+
 
 -- ============================================================
 -- DRIVER ADDRESS DATA
