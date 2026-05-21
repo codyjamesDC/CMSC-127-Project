@@ -1,7 +1,8 @@
 // frontend/src/pages/Registrations.jsx
 import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
-import { registrationsApi, vehiclesApi } from '../api/client';
+// 🛑 MODIFIED: Added violationsApi to check for unpaid tickets
+import { registrationsApi, vehiclesApi, violationsApi } from '../api/client';
 import { validateForm } from '../utils/validation';
 import { showConfirm } from '../utils/confirm';
 import { showToast } from '../utils/toast';
@@ -31,6 +32,44 @@ const computeStatus = (expDate) => {
   return new Date(expDate) <= new Date() ? 'expired' : 'active';
 };
 
+const formatLocalYYYYMMDD = (dateVal) => {
+  if (!dateVal) return '';
+  const d = dateVal instanceof Date ? dateVal : new Date(dateVal);
+  if (isNaN(d.getTime())) return typeof dateVal === 'string' ? dateVal.split('T')[0] : '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const calculateLTOExpiry = (plate, issueDateStr) => {
+  if (!plate || !issueDateStr) return '';
+  
+  const digits = plate.replace(/\D/g, ''); // Extract only numbers
+  const issueDate = new Date(issueDateStr);
+  const expiryYear = issueDate.getFullYear() + 1; // Exactly 1 year from issuance year
+
+  // Fallback if plate has no numbers (rare edge case): exactly 1 calendar year
+  if (digits.length < 2) {
+    return formatLocalYYYYMMDD(new Date(expiryYear, issueDate.getMonth(), issueDate.getDate()));
+  }
+
+  const lastDigit = parseInt(digits.slice(-1));
+  const secondLastDigit = parseInt(digits.slice(-2, -1));
+
+  // LTO Month Rule (Last Digit): 1=Jan, 2=Feb... 9=Sep, 0=Oct
+  const month = lastDigit === 0 ? 9 : lastDigit - 1; // 0-indexed for JS Date
+
+  // LTO Week Rule (2nd to Last Digit)
+  let day = 7;
+  if (secondLastDigit >= 1 && secondLastDigit <= 3) day = 7;       // 1st Week
+  else if (secondLastDigit >= 4 && secondLastDigit <= 6) day = 14; // 2nd Week
+  else if (secondLastDigit >= 7 && secondLastDigit <= 8) day = 21; // 3rd Week
+  else if (secondLastDigit === 9 || secondLastDigit === 0) day = 28; // 4th Week
+
+  return formatLocalYYYYMMDD(new Date(expiryYear, month, day));
+};
+
 export default function Registrations() {
   const [registrations, setRegistrations] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -56,6 +95,8 @@ export default function Registrations() {
       
       setRegistrations(rawData.map(r => ({
         ...r, 
+        registration_date: formatLocalYYYYMMDD(r.registration_date),
+        expiration_date: formatLocalYYYYMMDD(r.expiration_date),
         computed_status: computeStatus(r.expiration_date),
         display_reg: r.registration_number ?? r.registration_no
       })));
@@ -68,6 +109,15 @@ export default function Registrations() {
   };
 
   useEffect(() => { load(); }, [filterStatus]);
+
+  useEffect(() => {
+    if ((modal === 'add' || modal === 'edit') && form.plate_no && form.registration_date) {
+      const calcExpiryStr = calculateLTOExpiry(form.plate_no, form.registration_date);
+      if (form.expiration_date !== calcExpiryStr) {
+        setForm(f => ({ ...f, expiration_date: calcExpiryStr }));
+      }
+    }
+  }, [form.plate_no, form.registration_date, modal]);
 
   const filtered = registrations.filter(r =>
     [r.registration_number ?? r.registration_no, r.plate_no, r.vehicle_type]
@@ -99,8 +149,8 @@ export default function Registrations() {
       const payload = {
         registration_number: form.registration_number,
         plate_no: form.plate_no,
-        registration_date: form.registration_date,
-        expiration_date: form.expiration_date,
+        registration_date: form.registration_date?.split('T')[0],
+        expiration_date: form.expiration_date?.split('T')[0],
       };
 
       if (modal === 'add') {
@@ -119,18 +169,56 @@ export default function Registrations() {
     setSaving(false);
   };
 
-  const handleRenew = () => {
+  // 🛑 MODIFIED: Made handleRenew async to fetch violations before processing
+  const handleRenew = async () => {
+    const expiryStr = form.expiration_date?.split('T')[0];
+    
+    if (!expiryStr) {
+      alert("Cannot renew: Expiration date is missing.");
+      return;
+    }
+
+    // 🛑 NEW: Check for unpaid violations
+    try {
+      const vioRes = await violationsApi.getAll();
+      const tickets = Array.isArray(vioRes.data) ? vioRes.data : vioRes.data?.data ?? [];
+      const hasUnpaidVio = tickets.some(t => t.plate_no === form.plate_no && t.violation_status === 'Unpaid');
+
+      if (hasUnpaidVio) {
+        alert('Renewal blocked: This vehicle has existing unsettled (Unpaid) violations. Please settle them first.');
+        return;
+      }
+    } catch (e) {
+      console.error("Failed to check violations", e);
+    }
+
     const today = new Date();
-    today.setFullYear(today.getFullYear() + 5);
-    const newExpiry = today.toISOString().split('T')[0];
+    today.setHours(0, 0, 0, 0);
+
+    const [expYear, expMonth, expDay] = expiryStr.split('-').map(Number);
+    const expiryDate = new Date(expYear, expMonth - 1, expDay);
+
+    const diffTime = expiryDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 60) {
+      alert(`Renewal not allowed yet. You can only renew within 2 months (60 days) of your expiration date.\nYour registration still has ${diffDays} days left.`);
+      return;
+    }
+
+    const newExpiryDate = new Date(expYear + 1, expMonth - 1, expDay);
+
     setForm(f => ({
       ...f,
-      expiration_date: newExpiry
+      registration_date: formatLocalYYYYMMDD(today), // Update issuance to today
+      expiration_date: formatLocalYYYYMMDD(newExpiryDate)
     }));
+
+    alert(`Registration renewal applied!\nNew issuance date: ${formatLocalYYYYMMDD(today)}\nNew expiration date: ${formatLocalYYYYMMDD(newExpiryDate)}\n\nPlease click 'Save' to confirm changes.`);
   };
 
   const handleDelete = async (r) => {
-    const ok = await showConfirm(`Delete registration \"${r.registration_number ?? r.registration_no}\"? This cannot be undone.`);
+    const ok = await showConfirm(`Delete registration "${r.registration_number ?? r.registration_no}"? This cannot be undone.`);
     if (!ok) return;
     try { await registrationsApi.delete(r.registration_no ?? r.registration_number); await load(); showToast('Registration deleted', 'success'); }
     catch (e) { showToast('Delete failed: ' + (e.response?.data?.message ?? e.message), 'error'); }
@@ -142,7 +230,7 @@ export default function Registrations() {
     <div className="form-grid">
       <div className="form-group full">
         <label htmlFor="reg-registration_number" className="form-label">Registration Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-        <input id="reg-registration_number" className="form-control" name="registration_number" value={form.registration_number} onChange={handleChange} placeholder="REG-2025-00001" />
+        <input id="reg-registration_number" className="form-control" name="registration_number" value={form.registration_number} onChange={handleChange} placeholder="REG-2025-00001" disabled={modal === 'edit'} />
       </div>
       <div className="form-group full">
         <label htmlFor="reg-plate_no" className="form-label">Vehicle <span style={{ color: 'var(--lto-red)' }}>*</span></label>
@@ -156,7 +244,7 @@ export default function Registrations() {
         </select>
       </div>
       <div className="form-group">
-        <label htmlFor="reg-registration_date" className="form-label">Registration Date</label>
+        <label htmlFor="reg-registration_date" className="form-label">Registration Date <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="reg-registration_date" className="form-control" type="date" name="registration_date"
           value={form.registration_date?.split('T')[0] ?? ''}
           max={new Date().toISOString().split('T')[0]}
@@ -164,24 +252,23 @@ export default function Registrations() {
       </div>
 
       <div className="form-group">
-        {/* 🛑 NEW: Renew Button inside the label */}
         <label htmlFor="reg-expiration_date" className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Expiration Date</span>
+          <span>Expiration Date <span style={{ color: 'var(--lto-red)' }}>*</span></span>
           {modal === 'edit' && (
             <button type="button" onClick={handleRenew} style={{ background: 'var(--lto-blue)', color: 'white', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}>
-              RENEW 5 YRS
+              RENEW 1 YR
             </button>
           )}
         </label>
         <input id="reg-expiration_date" className="form-control" type="date" name="expiration_date"
           value={form.expiration_date?.split('T')[0] ?? ''}
           min={form.registration_date?.split('T')[0] || undefined}
-          onChange={handleChange} />
+          onChange={handleChange} 
+          disabled={modal === 'add' || modal === 'edit'} 
+        />
       </div>
     </div>
   );
-
-  
 
   const { sortedItems, requestSort, resetSort, sortConfig, getSortIcon } = useSortableTable(filtered);
 
@@ -209,7 +296,6 @@ export default function Registrations() {
             <option value="active">Active</option>
             <option value="expired">Expired</option>
           </select>
-          {/* 🛑 NEW: Clear Sort Button */}
           {sortConfig.key && <button className="btn btn-secondary btn-sm" onClick={resetSort} style={{ color: 'var(--lto-red)' }}>✕ Clear Sort</button>}
           <button className="btn btn-secondary btn-sm" onClick={load}>↺ Refresh</button>
         </div>
@@ -226,7 +312,6 @@ export default function Registrations() {
               <thead>
                 <tr>
                   <th>#</th>
-                  {/* 🛑 NEW: Clickable Headers */}
                   <SortableHeader label="Reg. Number" sortKey="display_reg"/>
                   <SortableHeader label="Plate No." sortKey="plate_no"/>
                   <SortableHeader label="Vehicle Type" sortKey="vehicle_type"/>
@@ -237,7 +322,6 @@ export default function Registrations() {
                 </tr>
               </thead>
               <tbody>
-                {/* 🛑 NEW: Use sortedItems */}
                 {sortedItems.map((r, i) => (
                   <tr key={r.display_reg ?? i}>
                     <td style={{ color: 'var(--lto-text-muted)', fontWeight: 600 }}>{i + 1}</td>
