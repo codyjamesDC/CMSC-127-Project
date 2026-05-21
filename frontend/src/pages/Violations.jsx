@@ -46,6 +46,7 @@ export default function Violations() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [errors, setErrors] = useState({});
 
   const load = async () => {
     setLoading(true);
@@ -125,24 +126,29 @@ export default function Violations() {
   };
 
   const handleSave = async () => {
-    const errors = validateForm(form, ticketRules);
-    if (Object.keys(errors).length > 0) {
-      setMsg(`Error: ${Object.values(errors)[0]}`);
+    const validationErrors = validateForm(form, ticketRules);
+    // Additional presence checks
+    if (!form.license_no) validationErrors.license_no = 'Please select a driver.';
+    if (!form.plate_no) validationErrors.plate_no = 'Please select a vehicle.';
+    if (!form.violations || form.violations.length === 0) validationErrors.violations = 'At least one violation is required.';
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setMsg(`Error: ${Object.values(validationErrors)[0]}`);
+      const firstField = Object.keys(validationErrors)[0];
+      const el = document.getElementById(`vio-${firstField}`) || document.getElementById(firstField);
+      if (el && typeof el.focus === 'function') el.focus();
       return;
     }
+    setErrors({});
     
     setSaving(true);
     try {
-      if (!form.license_no) { setMsg('Error: Please select a driver.'); setSaving(false); return; }
-      if (!form.plate_no)   { setMsg('Error: Please select a vehicle.'); setSaving(false); return; }
+      // dynamic violations validated above
 
       const selectedVehicle = vehicles.find(v => v.plate_no === form.plate_no);
       if (!selectedVehicle) { setMsg('Error: Selected vehicle not found.'); setSaving(false); return; }
 
-      // MODIFIED: Manual validation for the dynamic violations array
-      if (!form.violations || form.violations.length === 0) {
-        setMsg('Error: At least one violation is required.'); setSaving(false); return;
-      }
+      // MODIFIED: Manual validation for the dynamic violations array (rows already checked above)
       for (let i = 0; i < form.violations.length; i++) {
         if (!form.violations[i].violation_name) { setMsg(`Error: Violation type is required in row ${i + 1}.`); setSaving(false); return; }
         if (form.violations[i].fine_amount === '' || isNaN(form.violations[i].fine_amount)) { setMsg(`Error: Valid fine amount is required in row ${i + 1}.`); setSaving(false); return; }
@@ -173,6 +179,7 @@ export default function Violations() {
       await load();
       setModal(null);
       setMsg('');
+      setErrors({});
       showToast('Violation saved', 'success', 3000);
     } catch (e) {
       setMsg('Error: ' + (e.response?.data?.message ?? e.message));
@@ -205,19 +212,23 @@ export default function Violations() {
           value={form.date?.split('T')[0] ?? ''}
           max={today}
           onChange={handleChange} />
+        {errors.date && <div className="field-error">{errors.date}</div>}
       </div>
       <div className="form-group full">
         <label htmlFor="vio-location" className="form-label">Location</label>
         <input id="vio-location" className="form-control" name="location" value={form.location} onChange={handleChange} placeholder="EDSA, Quezon City" />
+        {errors.location && <div className="field-error">{errors.location}</div>}
       </div>
       <div className="form-group">
         <label htmlFor="vio-officer" className="form-label">Apprehending Officer <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input id="vio-officer" className="form-control" name="apprehending_officer" value={form.apprehending_officer} onChange={handleChange} placeholder="PO1 Juan Dela Cruz" />
+        {errors.apprehending_officer && <div className="field-error">{errors.apprehending_officer}</div>}
       </div>
       <div className="form-group">
         <label htmlFor="vio-driver" className="form-label">Driver <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <select id="vio-driver" className="form-control" name="license_no" value={form.license_no} onChange={handleChange}>
           <option value="">— Select Driver —</option>
+        {errors.license_no && <div className="field-error">{errors.license_no}</div>}
           {drivers.map(d => <option key={d.license_no} value={d.license_no}>{d.full_name} · {d.license_no}</option>)}
         </select>
       </div>
@@ -225,6 +236,7 @@ export default function Violations() {
         <label htmlFor="vio-vehicle" className="form-label">Vehicle <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <select id="vio-vehicle" className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange}>
           <option value="">— Select Vehicle —</option>
+        {errors.plate_no && <div className="field-error">{errors.plate_no}</div>}
           {vehicles.map(v => <option key={v.plate_no} value={v.plate_no}>{v.plate_no} · {v.make} {v.model}</option>)}
         </select>
       </div>

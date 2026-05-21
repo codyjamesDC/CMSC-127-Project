@@ -37,10 +37,10 @@ const vehicleRules = {
 }
 
 // Defined outside component to prevent focus loss on re-render
-const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPES }) => (
+const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPES, errors }) => (
   <div className="form-grid">
     <div className="form-group">
-      <label className="form-label">Plate Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+      <label htmlFor="vehicle-plate_no" className="form-label">Plate Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       {/* P0 1.1 FIX: name="plate_no" (was plate_number) */}
       <input className="form-control" name="plate_no" value={form.plate_no} onChange={handleChange} placeholder="AAA1234" disabled={form._isEdit} />
     </div>
@@ -51,14 +51,16 @@ const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPE
       </select>
     </div>
     <div className="form-group">
-      <label className="form-label">Engine Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+      <label htmlFor="vehicle-engine_no" className="form-label">Engine Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       {/* P0 1.1 FIX: name="engine_no" (was engine_number) */}
-      <input className="form-control" name="engine_no" value={form.engine_no} onChange={handleChange} placeholder="ENGINE123" />
+      <input id="vehicle-engine_no" className="form-control" name="engine_no" value={form.engine_no} onChange={handleChange} placeholder="ENGINE123" />
+      {errors.engine_no && <div className="field-error">{errors.engine_no}</div>}
     </div>
     <div className="form-group">
-      <label className="form-label">Chassis Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+      <label htmlFor="vehicle-chassis_no" className="form-label">Chassis Number <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       {/* P0 1.1 FIX: name="chassis_no" (was chassis_number) */}
-      <input className="form-control" name="chassis_no" value={form.chassis_no} onChange={handleChange} placeholder="CHASSIS123" />
+      <input id="vehicle-chassis_no" className="form-control" name="chassis_no" value={form.chassis_no} onChange={handleChange} placeholder="CHASSIS123" />
+      {errors.chassis_no && <div className="field-error">{errors.chassis_no}</div>}
     </div>
     <div className="form-group">
       <label className="form-label">Ownership Type</label>
@@ -67,31 +69,36 @@ const FormFields = ({ form, handleChange, drivers, VEHICLE_TYPES, OWNERSHIP_TYPE
       </select>
     </div>
     <div className="form-group">
-      <label className="form-label">Make (Brand) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-      <input className="form-control" name="make" value={form.make} onChange={handleChange} placeholder="Toyota" />
+      <label htmlFor="vehicle-make" className="form-label">Make (Brand) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+      <input id="vehicle-make" className="form-control" name="make" value={form.make} onChange={handleChange} placeholder="Toyota" />
+      {errors.make && <div className="field-error">{errors.make}</div>}
     </div>
     <div className="form-group">
-      <label className="form-label">Model <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-      <input className="form-control" name="model" value={form.model} onChange={handleChange} placeholder="Vios" />
+      <label htmlFor="vehicle-model" className="form-label">Model <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+      <input id="vehicle-model" className="form-control" name="model" value={form.model} onChange={handleChange} placeholder="Vios" />
+      {errors.model && <div className="field-error">{errors.model}</div>}
     </div>
     <div className="form-group">
-      <label className="form-label">Year <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-      <input className="form-control" type="number" name="year" value={form.year} onChange={handleChange} placeholder="2024" min="1900" max="2030" />
+      <label htmlFor="vehicle-year" className="form-label">Year <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+      <input id="vehicle-year" className="form-control" type="number" name="year" value={form.year} onChange={handleChange} placeholder="2024" min="1900" max="2030" />
+      {errors.year && <div className="field-error">{errors.year}</div>}
     </div>
     <div className="form-group">
-      <label className="form-label">Color <span style={{ color: 'var(--lto-red)' }}>*</span></label>
-      <input className="form-control" name="color" value={form.color} onChange={handleChange} placeholder="White" />
+      <label htmlFor="vehicle-color" className="form-label">Color <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+      <input id="vehicle-color" className="form-control" name="color" value={form.color} onChange={handleChange} placeholder="White" />
+      {errors.color && <div className="field-error">{errors.color}</div>}
     </div>
     <div className="form-group full">
-      <label className="form-label">Registered Owner (Driver) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
+      <label htmlFor="vehicle-license_no" className="form-label">Registered Owner (Driver) <span style={{ color: 'var(--lto-red)' }}>*</span></label>
       {/* P0 1.1 FIX: name="license_no" (was driver_id) */}
-      <select className="form-control" name="license_no" value={form.license_no ?? ''} onChange={handleChange}>
+      <select id="vehicle-license_no" className="form-control" name="license_no" value={form.license_no ?? ''} onChange={handleChange}>
         <option value="">— Select Owner —</option>
         {drivers.map(d => (
           <option key={d.license_no} value={d.license_no}>
             {d.full_name} · {d.license_no}
           </option>
         ))}
+      {errors.license_no && <div className="field-error">{errors.license_no}</div>}
       </select>
     </div>
   </div>
@@ -110,6 +117,7 @@ export default function Vehicles() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [errors, setErrors] = useState({});
 
   const load = async () => {
     setLoading(true);
@@ -175,11 +183,16 @@ export default function Vehicles() {
 
   const handleSave = async () => {
     // Validate before proceeding
-    const errors = validateForm(form, vehicleRules);
-    if (Object.keys(errors).length > 0) {
-      setMsg(`Error: ${Object.values(errors)[0]}`);
+    const validationErrors = validateForm(form, vehicleRules);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setMsg(`Error: ${Object.values(validationErrors)[0]}`);
+      const firstField = Object.keys(validationErrors)[0];
+      const el = document.getElementById(`vehicle-${firstField}`) || document.getElementById(firstField);
+      if (el && typeof el.focus === 'function') el.focus();
       return;
     }
+    setErrors({});
     setSaving(true);
     
     // 🛑 NEW: Ensure constraints on Ownership and Owner changes
@@ -373,6 +386,7 @@ export default function Vehicles() {
             drivers={drivers}
             VEHICLE_TYPES={VEHICLE_TYPES}
             OWNERSHIP_TYPES={OWNERSHIP_TYPES}
+            errors={errors}
           />
         </Modal>
       )}

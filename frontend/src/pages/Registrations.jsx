@@ -82,6 +82,7 @@ export default function Registrations() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [errors, setErrors] = useState({});
 
   const load = async () => {
     setLoading(true);
@@ -139,11 +140,16 @@ export default function Registrations() {
   };
 
   const handleSave = async () => {
-    const errors = validateForm(form, registrationRules);
-    if (Object.keys(errors).length > 0) {
-      setMsg(`Error: ${Object.values(errors)[0]}`);
+    const validationErrors = validateForm(form, registrationRules);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setMsg(`Error: ${Object.values(validationErrors)[0]}`);
+      const firstField = Object.keys(validationErrors)[0];
+      const el = document.getElementById(`reg-${firstField}`) || document.getElementById(firstField);
+      if (el && typeof el.focus === 'function') el.focus();
       return;
     }
+    setErrors({});
     setSaving(true);
     try {
       const payload = {
@@ -162,6 +168,7 @@ export default function Registrations() {
       await load();
       setModal(null);
       setMsg('');
+      setErrors({});
       showToast('Registration saved', 'success', 3000);
     } catch (e) {
       setMsg('Error: ' + (e.response?.data?.message ?? e.message));
@@ -242,6 +249,7 @@ export default function Registrations() {
             </option>
           ))}
         </select>
+        {errors.plate_no && <div className="field-error">{errors.plate_no}</div>}
       </div>
       <div className="form-group">
         <label htmlFor="reg-registration_date" className="form-label">Registration Date <span style={{ color: 'var(--lto-red)' }}>*</span></label>
@@ -249,6 +257,7 @@ export default function Registrations() {
           value={form.registration_date?.split('T')[0] ?? ''}
           max={new Date().toISOString().split('T')[0]}
           onChange={handleChange} />
+        {errors.registration_date && <div className="field-error">{errors.registration_date}</div>}
       </div>
 
       <div className="form-group">
