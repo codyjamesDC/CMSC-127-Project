@@ -82,7 +82,7 @@ const formatLocalYYYYMMDD = (dateVal) => {
 // Mirrors how Registrations.jsx computes status — only overrides 'Active',
 // never touches 'Suspended' or 'Revoked'.
 const computeLicenseStatus = (driver) => {
-  if (driver.license_status === 'Active' && driver.expiry_date) {
+  if (driver.license_status?.toLowerCase() === 'active' && driver.expiry_date) {
     return new Date(driver.expiry_date) < new Date() ? 'Expired' : 'Active';
   }
   return driver.license_status;
@@ -168,7 +168,7 @@ export default function Drivers() {
       d.addresses.join(' '),
     ].some(field => field?.toLowerCase().includes(search.toLowerCase()));
     const matchesType = !filterType || d.license_type === filterType;
-    const matchesStatus = !filterStatus || d.license_status === filterStatus;
+    const matchesStatus = !filterStatus || d.license_status?.toLowerCase() === filterStatus.toLowerCase();;
     return matchesSearch && matchesType && matchesStatus;
   });
 
@@ -394,21 +394,21 @@ export default function Drivers() {
       <div className="form-group full">
       <label className="form-label">Mother's Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <div style={{ display: 'flex', gap: 8 }}>
-          <input id="driver-mother_fname" className="form-control" style={{ flex: 1 }} name="mother_fname" value={form.mother_fname} onChange={handleChange} placeholder="Mother First" />
-          {errors.mother_fname && <div className="field-error">{errors.mother_fname}</div>}
-          <input id="driver-mother_mname" className="form-control" style={{ flex: 1 }} name="mother_mname" value={form.mother_mname} onChange={handleChange} placeholder="Mother Middle" />
-          <input id="driver-mother_lname" className="form-control" style={{ flex: 1 }} name="mother_lname" value={form.mother_lname} onChange={handleChange} placeholder="Mother Last" />
+          <input id="driver-mother_fname" className="form-control" style={{ flex: 1, minWidth: 0 }} name="mother_fname" value={form.mother_fname} onChange={handleChange} placeholder="Mother First" />
+          <input id="driver-mother_mname" className="form-control" style={{ flex: 1, minWidth: 0 }} name="mother_mname" value={form.mother_mname} onChange={handleChange} placeholder="Mother Middle" />
+          <input id="driver-mother_lname" className="form-control" style={{ flex: 1, minWidth: 0 }} name="mother_lname" value={form.mother_lname} onChange={handleChange} placeholder="Mother Last" />
         </div>
+        {errors.mother_fname && <div className="field-error" style={{ marginTop: 6 }}>{errors.mother_fname}</div>}
       </div>
 
       <div className="form-group full">
       <label className="form-label">Father's Name <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <div style={{ display: 'flex', gap: 8 }}>
-          <input id="driver-father_fname" className="form-control" style={{ flex: 1 }} name="father_fname" value={form.father_fname} onChange={handleChange} placeholder="Father First" />
-          {errors.father_fname && <div className="field-error">{errors.father_fname}</div>}
-          <input id="driver-father_mname" className="form-control" style={{ flex: 1 }} name="father_mname" value={form.father_mname} onChange={handleChange} placeholder="Father Middle" />
-          <input id="driver-father_lname" className="form-control" style={{ flex: 1 }} name="father_lname" value={form.father_lname} onChange={handleChange} placeholder="Father Last" />
+          <input id="driver-father_fname" className="form-control" style={{ flex: 1, minWidth: 0 }} name="father_fname" value={form.father_fname} onChange={handleChange} placeholder="Father First" />
+          <input id="driver-father_mname" className="form-control" style={{ flex: 1, minWidth: 0 }} name="father_mname" value={form.father_mname} onChange={handleChange} placeholder="Father Middle" />
+          <input id="driver-father_lname" className="form-control" style={{ flex: 1, minWidth: 0 }} name="father_lname" value={form.father_lname} onChange={handleChange} placeholder="Father Last" />
         </div>
+        {errors.father_fname && <div className="field-error" style={{ marginTop: 6 }}>{errors.father_fname}</div>}
       </div>
 
       <div className="form-group">
@@ -423,37 +423,37 @@ export default function Drivers() {
         {errors.emrg_contact_no && <div className="field-error">{errors.emrg_contact_no}</div>}
       </div>
 
-      <div className="form-group full" style={{ background: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 8 }}>
+      <div className="form-group full">
         <label className="form-label">Addresses</label>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('addresses')} style={{ marginBottom: 8 }}>+ Add Address</button>
         {form.addresses.map((addr, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input id={`driver-address-${i}`} className="form-control" value={addr} onChange={e => handleArrayChange('addresses', i, e.target.value)} placeholder="Brgy., City, Province" />
+            <input id={`driver-address-${i}`} className="form-control" style={{ flex: 1, minWidth: 0 }} value={addr} onChange={e => handleArrayChange('addresses', i, e.target.value)} placeholder="Brgy., City, Province" />
             <button type="button" className="btn btn-danger btn-sm" onClick={() => removeArrayItem('addresses', i)} aria-label={`Remove Address ${i+1}`}>✕</button>
           </div>
         ))}
-        <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('addresses')}>+ Add Address</button>
       </div>
 
-      <div className="form-group" style={{ background: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 8 }}>
+      <div className="form-group">
         <label className="form-label">Conditions</label>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('conditions')} style={{ marginBottom: 8 }}>+ Add Condition</button>
         {form.conditions.map((cond, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input id={`driver-condition-${i}`} className="form-control" value={cond} onChange={e => handleArrayChange('conditions', i, e.target.value)} placeholder="e.g. Wear eyeglasses" />
+            <input id={`driver-condition-${i}`} className="form-control" style={{ flex: 1, minWidth: 0 }} value={cond} onChange={e => handleArrayChange('conditions', i, e.target.value)} placeholder="e.g. Wear eyeglasses" />
             <button type="button" className="btn btn-danger btn-sm" onClick={() => removeArrayItem('conditions', i)} aria-label={`Remove Condition ${i+1}`}>✕</button>
           </div>
         ))}
-        <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('conditions')}>+ Add Condition</button>
       </div>
 
-      <div className="form-group" style={{ background: 'rgba(0,0,0,0.02)', padding: 12, borderRadius: 8 }}>
+      <div className="form-group">
         <label className="form-label">License Codes</label>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('license_codes')} style={{ marginBottom: 8 }}>+ Add Code</button>
         {form.license_codes.map((code, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input id={`driver-code-${i}`} className="form-control" value={code} onChange={e => handleArrayChange('license_codes', i, e.target.value)} placeholder="e.g. A, B" />
+            <input id={`driver-code-${i}`} className="form-control" style={{ flex: 1, minWidth: 0 }} value={code} onChange={e => handleArrayChange('license_codes', i, e.target.value)} placeholder="e.g. A, B" />
             <button type="button" className="btn btn-danger btn-sm" onClick={() => removeArrayItem('license_codes', i)} aria-label={`Remove License Code ${i+1}`}>✕</button>
           </div>
         ))}
-        <button type="button" className="btn btn-secondary btn-sm" onClick={() => addArrayItem('license_codes')}>+ Add Code</button>
       </div>
 
       <div className="form-group">
@@ -596,7 +596,7 @@ export default function Drivers() {
           title={modal === 'add' ? '👤 Add New Driver' : '✏️ Edit Driver'}
           onClose={() => setModal(null)}
           footer={<>
-            {msg && <span style={{ fontSize: 12, color: msg.startsWith('Error') ? 'var(--lto-red)' : 'green', flex: 1 }}>{msg}</span>}
+            {msg && <span style={{ fontSize: 12, color: msg.startsWith('Error') ? 'var(--lto-red)' : 'green', flex: 1, minWidth: 0 }}>{msg}</span>}
             <button className="btn btn-secondary" onClick={() => setModal(null)}>Cancel</button>
             <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Driver'}</button>
           </>}
