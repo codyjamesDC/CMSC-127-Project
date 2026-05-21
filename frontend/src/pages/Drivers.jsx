@@ -473,7 +473,7 @@ export default function Drivers() {
       )}
 
       <div className="form-group">
-        <label className="form-label">Issue Date</label>
+        <label className="form-label">Issue Date <span style={{ color: 'var(--lto-red)' }}>*</span></label>
         <input className="form-control" type="date" name="issued_date"
           value={form.issued_date?.split('T')[0] ?? ''}
           max={new Date().toISOString().split('T')[0]}
@@ -482,7 +482,7 @@ export default function Drivers() {
 
       <div className="form-group">
         <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Expiration Date</span>
+          <span>Expiration Date <span style={{ color: 'var(--lto-red)' }}>*</span> </span>
           {modal === 'edit' && (
             <button type="button" onClick={handleRenew} style={{ background: 'var(--lto-blue)', color: 'white', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}>
               RENEW 5 YRS

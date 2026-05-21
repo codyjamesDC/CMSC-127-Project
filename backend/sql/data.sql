@@ -6,25 +6,16 @@ USE `vehiclemanager`;
 -- DRIVER DATA
 -- ============================================================
 INSERT INTO `driver` VALUES
-('N01-23-456789', 'Juan', 'Dela Cruz', 'Santos', '1990-05-15', 'M', 'Filipino', 168.50, 70.00, 'Brown', 'O+', '09171234567', 1, 'Maria', 'Dela Cruz', 'Reyes', 'Pedro', 'Dela Cruz', 'Miguel', 'Maria Dela Cruz', '09181234567', 'Non-Professional', 'Active', '2020-03-10', '2025-03-10', 'LTO-NCR'),
-
-('P02-22-654321', 'Maria', 'Santos', 'Garcia', '1985-08-22', 'F', 'Filipino', 160.00, 55.00, 'Brown', 'A+', '09281234567', 0, 'Carmen', 'Santos', 'Torres', 'Jose', 'Santos', 'Ramos', 'Jose Santos', '09191234567', 'Professional', 'Active', '2019-06-15', '2024-06-15', 'LTO-R4A'),
-
-('N03-21-789012', 'Carlos', 'Mendoza', 'Lopez', '1995-12-03', 'M', 'Filipino', 175.00, 80.00, 'Brown', 'B+', '09331234567', 1, 'Rosa', 'Mendoza', 'Cruz', 'Manuel', 'Mendoza', 'Diaz', 'Rosa Mendoza', '09201234567', 'Non-Professional', 'Active', '2021-01-20', '2026-01-20', 'LTO-R3'),
-
-('P04-20-345678', 'Ana', 'Reyes', 'Fernandez', '1988-03-18', 'F', 'Filipino', 165.00, 58.00, 'Brown', 'AB+', '09451234567', 0, 'Lucia', 'Reyes', 'Martinez', 'Ramon', 'Reyes', 'Gonzales', 'Lucia Reyes', '09211234567', 'Professional', 'Active', '2018-09-05', '2023-09-05', 'LTO-R7'),
-
-('N05-19-901234', 'Pedro', 'Aquino', 'Rivera', '1992-07-25', 'M', 'Filipino', 170.00, 75.00, 'Brown', 'O+', '09561234567', 1, 'Elena', 'Aquino', 'Morales', 'Luis', 'Aquino', 'Navarro', 'Elena Aquino', '09221234567', 'Non-Professional', 'Suspended', '2017-04-12', '2022-04-12', 'LTO-R1'),
-
-('S06-24-567890', 'Sofia', 'Torres', 'Ramos', '2002-11-30', 'F', 'Filipino', 158.00, 50.00, 'Brown', 'A+', '09671234567', 0, 'Patricia', 'Torres', 'Castillo', 'Miguel', 'Torres', 'Ortiz', 'Patricia Torres', '09231234567', 'Student Permit', 'Active', '2024-02-01', '2025-02-01', 'LTO-NCR'),
-
-('P07-21-234567', 'Roberto', 'Cruz', 'Gomez', '1987-04-09', 'M', 'Filipino', 172.00, 78.00, 'Brown', 'B+', '09781234567', 1, 'Teresa', 'Cruz', 'Flores', 'Antonio', 'Cruz', 'Silva', 'Teresa Cruz', '09241234567', 'Professional', 'Active', '2020-07-18', '2025-07-18', 'LTO-R4A'),
-
-('N08-22-890123', 'Isabel', 'Gonzales', 'Vargas', '1993-09-14', 'F', 'Filipino', 162.00, 56.00, 'Brown', 'O+', '09891234567', 0, 'Angelica', 'Gonzales', 'Herrera', 'Francisco', 'Gonzales', 'Mendez', 'Francisco Gonzales', '09251234567', 'Non-Professional', 'Active', '2021-11-22', '2026-11-22', 'LTO-R6'),
-
-('N09-18-456780', 'Miguel', 'Fernandez', 'Castro', '1991-02-28', 'M', 'Filipino', 169.00, 72.00, 'Brown', 'A+', '09901234567', 1, 'Cristina', 'Fernandez', 'Jimenez', 'Rodrigo', 'Fernandez', 'Perez', 'Cristina Fernandez', '09261234567', 'Non-Professional', 'Expired', '2015-05-30', '2020-05-30', 'LTO-R2'),
-
-('P10-23-678901', 'Carmen', 'Lopez', 'Sanchez', '1986-06-17', 'F', 'Filipino', 161.00, 54.00, 'Brown', 'AB+', '09011234567', 0, 'Gloria', 'Lopez', 'Ramirez', 'Eduardo', 'Lopez', 'Gutierrez', 'Eduardo Lopez', '09271234567', 'Professional', 'Active', '2022-03-25', '2027-03-25', 'LTO-R5');
+('N01-23-456789', 'Juan', 'Dela Cruz', 'Santos', '1990-05-15', 'M', 'Filipino', 168.50, 70.00, 'Brown', 'O+', '09171234567', 1, 'Maria', 'Dela Cruz', 'Reyes', 'Pedro', 'Dela Cruz', 'Miguel', 'Maria Dela Cruz', '09181234567', 'Non-Professional', 'Active', '2020-03-10', '2024-05-15', 'LTO-NCR'),
+('P02-22-654321', 'Maria', 'Santos', 'Garcia', '1985-08-22', 'F', 'Filipino', 160.00, 55.00, 'Brown', 'A+', '09281234567', 0, 'Carmen', 'Santos', 'Torres', 'Jose', 'Santos', 'Ramos', 'Jose Santos', '09191234567', 'Professional', 'Active', '2019-06-15', '2023-08-22', 'LTO-R4A'),
+('N03-21-789012', 'Carlos', 'Mendoza', 'Lopez', '1995-12-03', 'M', 'Filipino', 175.00, 80.00, 'Brown', 'B+', '09331234567', 1, 'Rosa', 'Mendoza', 'Cruz', 'Manuel', 'Mendoza', 'Diaz', 'Rosa Mendoza', '09201234567', 'Non-Professional', 'Active', '2021-01-20', '2025-12-03', 'LTO-R3'),
+('P04-20-345678', 'Ana', 'Reyes', 'Fernandez', '1988-03-18', 'F', 'Filipino', 165.00, 58.00, 'Brown', 'AB+', '09451234567', 0, 'Lucia', 'Reyes', 'Martinez', 'Ramon', 'Reyes', 'Gonzales', 'Lucia Reyes', '09211234567', 'Professional', 'Active', '2018-09-05', '2023-03-18', 'LTO-R7'),
+('N05-19-901234', 'Pedro', 'Aquino', 'Rivera', '1992-07-25', 'M', 'Filipino', 170.00, 75.00, 'Brown', 'O+', '09561234567', 1, 'Elena', 'Aquino', 'Morales', 'Luis', 'Aquino', 'Navarro', 'Elena Aquino', '09221234567', 'Non-Professional', 'Suspended', '2017-04-12', '2021-07-25', 'LTO-R1'),
+('S06-24-567890', 'Sofia', 'Torres', 'Ramos', '2002-11-30', 'F', 'Filipino', 158.00, 50.00, 'Brown', 'A+', '09671234567', 0, 'Patricia', 'Torres', 'Castillo', 'Miguel', 'Torres', 'Ortiz', 'Patricia Torres', '09231234567', 'Student Permit', 'Active', '2024-02-01', '2028-11-30', 'LTO-NCR'),
+('P07-21-234567', 'Roberto', 'Cruz', 'Gomez', '1987-04-09', 'M', 'Filipino', 172.00, 78.00, 'Brown', 'B+', '09781234567', 1, 'Teresa', 'Cruz', 'Flores', 'Antonio', 'Cruz', 'Silva', 'Teresa Cruz', '09241234567', 'Professional', 'Active', '2020-07-18', '2025-04-09', 'LTO-R4A'),
+('N08-22-890123', 'Isabel', 'Gonzales', 'Vargas', '1993-09-14', 'F', 'Filipino', 162.00, 56.00, 'Brown', 'O+', '09891234567', 0, 'Angelica', 'Gonzales', 'Herrera', 'Francisco', 'Gonzales', 'Mendez', 'Francisco Gonzales', '09251234567', 'Non-Professional', 'Active', '2021-11-22', '2026-09-14', 'LTO-R6'),
+('N09-18-456780', 'Miguel', 'Fernandez', 'Castro', '1991-02-28', 'M', 'Filipino', 169.00, 72.00, 'Brown', 'A+', '09901234567', 1, 'Cristina', 'Fernandez', 'Jimenez', 'Rodrigo', 'Fernandez', 'Perez', 'Cristina Fernandez', '09261234567', 'Non-Professional', 'Expired', '2015-05-30', '2020-02-28', 'LTO-R2'),
+('P10-23-678901', 'Carmen', 'Lopez', 'Sanchez', '1986-06-17', 'F', 'Filipino', 161.00, 54.00, 'Brown', 'AB+', '09011234567', 0, 'Gloria', 'Lopez', 'Ramirez', 'Eduardo', 'Lopez', 'Gutierrez', 'Eduardo Lopez', '09271234567', 'Professional', 'Active', '2022-03-25', '2026-06-17', 'LTO-R5');
 
 -- ============================================================
 -- DRIVER ADDRESS DATA
@@ -73,26 +64,15 @@ INSERT INTO `driver_license_code` VALUES
 -- DRIVER CONDITION DATA
 -- ============================================================
 INSERT INTO `driver_condition` VALUES
--- Maria Santos (P02-22-654321) - 2 conditions
 ('P02-22-654321', 'Must wear corrective lenses'),
 ('P02-22-654321', 'Automatic transmission only'),
-
--- Ana Reyes (P04-20-345678) - 1 condition
 ('P04-20-345678', 'Must wear corrective lenses'),
-
--- Pedro Aquino (N05-19-901234) - 3 conditions
 ('N05-19-901234', 'Hearing aid required'),
 ('N05-19-901234', 'Daylight driving only'),
 ('N05-19-901234', 'Power steering required'),
-
--- Roberto Cruz (P07-21-234567) - 2 conditions
 ('P07-21-234567', 'Must wear corrective lenses'),
 ('P07-21-234567', 'Speed limit 60 kph maximum'),
-
--- Isabel Gonzales (N08-22-890123) - 1 condition
 ('N08-22-890123', 'Left arm prosthetic'),
-
--- Miguel Fernandez (N09-18-456780) - 2 conditions
 ('N09-18-456780', 'Color blind - red-green'),
 ('N09-18-456780', 'Must wear corrective lenses');
 
@@ -112,19 +92,40 @@ INSERT INTO `vehicle` VALUES
 ('YZA9012', 'ENG012345678', 'CHS098765432', 'For Hire', 'Truck', 'Green', 'Isuzu', 'NHR', 2021, 'P10-23-678901');
 
 -- ============================================================
--- VEHICLE REGISTRATION DATA
+-- 🛑 MODIFIED: VEHICLE REGISTRATION DATA (Follows LTO Plate Expiration Rule)
+-- Rules: Exactly 1 year from Registration Date.
+-- Expiration Month = Last Plate Digit. Expiration Day = 2nd to last Plate Digit.
 -- ============================================================
 INSERT INTO `vehicle_registration` VALUES
-('REG2020-ABC1234', '2025-06-30', '2020-06-15', 'ABC1234', 'ENG123456789', 'CHS987654321'),
-('REG2019-XYZ5678', '2024-08-15', '2019-08-01', 'XYZ5678', 'ENG234567890', 'CHS876543210'),
-('REG2021-DEF9012', '2026-02-28', '2021-02-10', 'DEF9012', 'ENG345678901', 'CHS765432109'),
-('REG2018-GHI3456', '2024-12-31', '2018-12-15', 'GHI3456', 'ENG456789012', 'CHS654321098'),
-('REG2022-JKL7890', '2027-03-31', '2022-03-20', 'JKL7890', 'ENG567890123', 'CHS543210987'),
-('REG2023-MNO2345', '2028-04-30', '2023-04-15', 'MNO2345', 'ENG678901234', 'CHS432109876'),
-('REG2017-PQR6789', '2024-07-31', '2017-07-10', 'PQR6789', 'ENG789012345', 'CHS321098765'),
-('REG2020-STU1234', '2025-09-30', '2020-09-05', 'STU1234', 'ENG890123456', 'CHS210987654'),
-('REG2019-VWX5678', '2024-11-30', '2019-11-20', 'VWX5678', 'ENG901234567', 'CHS109876543'),
-('REG2021-YZA9012', '2026-05-31', '2021-05-25', 'YZA9012', 'ENG012345678', 'CHS098765432');
+-- Plate ends in '34' (Apr, 1st week -> 04-07). Reg: 2023-04-07 -> Exp: 2024-04-07
+('REG2023-ABC1234', '2024-04-07', '2023-04-07', 'ABC1234', 'ENG123456789', 'CHS987654321'),
+
+-- Plate ends in '78' (Aug, 3rd week -> 08-21). Reg: 2023-08-21 -> Exp: 2024-08-21
+('REG2023-XYZ5678', '2024-08-21', '2023-08-21', 'XYZ5678', 'ENG234567890', 'CHS876543210'),
+
+-- Plate ends in '12' (Feb, 1st week -> 02-07). Reg: 2023-02-07 -> Exp: 2024-02-07
+('REG2023-DEF9012', '2024-02-07', '2023-02-07', 'DEF9012', 'ENG345678901', 'CHS765432109'),
+
+-- Plate ends in '56' (Jun, 2nd week -> 06-14). Reg: 2023-06-14 -> Exp: 2024-06-14
+('REG2023-GHI3456', '2024-06-14', '2023-06-14', 'GHI3456', 'ENG456789012', 'CHS654321098'),
+
+-- Plate ends in '90' (Oct, 4th week -> 10-28). Reg: 2023-10-28 -> Exp: 2024-10-28
+('REG2023-JKL7890', '2024-10-28', '2023-10-28', 'JKL7890', 'ENG567890123', 'CHS543210987'),
+
+-- Plate ends in '45' (May, 2nd week -> 05-14). Reg: 2023-05-14 -> Exp: 2024-05-14
+('REG2023-MNO2345', '2024-05-14', '2023-05-14', 'MNO2345', 'ENG678901234', 'CHS432109876'),
+
+-- Plate ends in '89' (Sep, 4th week -> 09-28). Reg: 2023-09-28 -> Exp: 2024-09-28
+('REG2023-PQR6789', '2024-09-28', '2023-09-28', 'PQR6789', 'ENG789012345', 'CHS321098765'),
+
+-- Plate ends in '34' (Apr, 1st week -> 04-07). Reg: 2023-04-07 -> Exp: 2024-04-07
+('REG2023-STU1234', '2024-04-07', '2023-04-07', 'STU1234', 'ENG890123456', 'CHS210987654'),
+
+-- Plate ends in '78' (Aug, 3rd week -> 08-21). Reg: 2023-08-21 -> Exp: 2024-08-21
+('REG2023-VWX5678', '2024-08-21', '2023-08-21', 'VWX5678', 'ENG901234567', 'CHS109876543'),
+
+-- Plate ends in '12' (Feb, 1st week -> 02-07). Reg: 2023-02-07 -> Exp: 2024-02-07
+('REG2023-YZA9012', '2024-02-07', '2023-02-07', 'YZA9012', 'ENG012345678', 'CHS098765432');
 
 -- ============================================================
 -- VIOLATION TICKET DATA

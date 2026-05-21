@@ -1,3 +1,4 @@
+// src/utils/validation.js
 export const validateForm = (form, rules) => {
   const errors = {};
 
@@ -64,6 +65,23 @@ export const validateForm = (form, rules) => {
       today.setHours(23, 59, 59, 999); // allow today itself
       if (inputDate > today) {
         errors[field] = rule.msg || `${humanLabel(field)} cannot be a future date.`;
+      }
+    }
+
+    // 🛑 NEW: Date: minimum age check ────────────────────────
+    if (rule.minAge && !errors[field]) { // Only check if there isn't already a "future date" error
+      const birthDate = new Date(value);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      
+      // Subtract 1 from age if the birthday hasn't occurred yet this year
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      if (age < rule.minAge) {
+        errors[field] = rule.minAgeMsg || `Must be at least ${rule.minAge} years old.`;
       }
     }
 
