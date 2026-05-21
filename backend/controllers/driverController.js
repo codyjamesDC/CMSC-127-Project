@@ -111,19 +111,23 @@ export const createDriver = async (req, res) => {
       license_type, computedStatus, 
       issued_date || null, expiry_date || null, agency_code || 'LTO-NCR'
     ];
+    // In createDriver, after inserting the driver:
     await conn.query(driverQueries.insert, driverValues);
+
+    // ✅ FIX: Remove the stray deleteAllForDriver line (unnecessary on create)
+    // and replace effectiveLicense with license_no
 
     if (addresses?.length) {
       for (const rawAddress of addresses) {
         const addr = normalizeAddress(rawAddress);
         if (hasAddressValue(addr)) {
+          const fullAddressString = [addr.street, addr.barangay, addr.city, addr.province, addr.zip_code]
+            .filter(val => val !== '')
+            .join(', ');
+
           await conn.query(addressQueries.insert, [
-            license_no,
-            addr.street,
-            addr.barangay,
-            addr.city,
-            addr.province,
-            addr.zip_code,
+            license_no,          // ✅ was: effectiveLicense
+            fullAddressString
           ]);
         }
       }
@@ -206,36 +210,37 @@ export const updateDriver = async (req, res) => {
 
     const effectiveLicense = license_no || old_license_no;
 
-    await conn.query(addressQueries.deleteAllForDriver, [effectiveLicense]);
-    if (addresses?.length) {
-      for (const rawAddress of addresses) {
-        const addr = normalizeAddress(rawAddress);
-        if (hasAddressValue(addr)) {
-          await conn.query(addressQueries.insert, [
-            effectiveLicense,
-            addr.street,
-            addr.barangay,
-            addr.city,
-            addr.province,
-            addr.zip_code,
-          ]);
-        }
-      }
-    }
+// ✅ FIX: Delete old addresses BEFORE inserting new ones
+await conn.query(addressQueries.deleteAllForDriver, [effectiveLicense]);
+if (addresses?.length) {
+  for (const rawAddress of addresses) {
+    const addr = normalizeAddress(rawAddress);
+    if (hasAddressValue(addr)) {
+      const fullAddressString = [addr.street, addr.barangay, addr.city, addr.province, addr.zip_code]
+        .filter(val => val !== '')
+        .join(', ');
 
-    await conn.query(conditionQueries.deleteAllForDriver, [effectiveLicense]);
-    if (conditions?.length) {
-      for (const cond of conditions) {
-        if (cond.trim()) await conn.query(conditionQueries.insert, [effectiveLicense, cond]);
-      }
+      await conn.query(addressQueries.insert, [
+        effectiveLicense,
+        fullAddressString
+      ]);
     }
+  }
+}
 
-    await conn.query(licenseCodeQueries.deleteAllForDriver, [effectiveLicense]);
-    if (license_codes?.length) {
-      for (const code of license_codes) {
-        if (code.trim()) await conn.query(licenseCodeQueries.insert, [effectiveLicense, code]);
-      }
-    }
+await conn.query(conditionQueries.deleteAllForDriver, [effectiveLicense]);
+if (conditions?.length) {
+  for (const cond of conditions) {
+    if (cond.trim()) await conn.query(conditionQueries.insert, [effectiveLicense, cond]);
+  }
+}
+
+await conn.query(licenseCodeQueries.deleteAllForDriver, [effectiveLicense]);
+if (license_codes?.length) {
+  for (const code of license_codes) {
+    if (code.trim()) await conn.query(licenseCodeQueries.insert, [effectiveLicense, code]);
+  }
+}
 
     await conn.commit();
     res.status(200).json({ success: true, message: 'Driver updated successfully' });

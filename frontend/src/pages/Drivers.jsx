@@ -71,13 +71,20 @@ const emptyForm = {
 
 const createEmptyAddress = () => ({ street: '', barangay: '', city: '', province: '', zip_code: '' });
 
-const normalizeAddress = (address = {}) => ({
-  street: address.street ?? '',
-  barangay: address.barangay ?? '',
-  city: address.city ?? '',
-  province: address.province ?? '',
-  zip_code: address.zip_code ?? '',
-});
+const normalizeAddress = (address = {}) => {
+  // Fallback to support the old single 'address' column
+  if (address.address) {
+    return { street: address.address, barangay: '', city: '', province: '', zip_code: '' };
+  }
+  
+  return {
+    street: address.street ?? '',
+    barangay: address.barangay ?? '',
+    city: address.city ?? '',
+    province: address.province ?? '',
+    zip_code: address.zip_code ?? '',
+  };
+};
 
 const formatAddress = (address) => {
   if (!address) return '';
@@ -310,6 +317,7 @@ export default function Drivers() {
         bday: form.bday?.split('T')[0],
         issued_date: form.issued_date?.split('T')[0],
         expiry_date: form.expiry_date?.split('T')[0],
+        organ_donor: Number(form.organ_donor),
         addresses: form.addresses
           .map(normalizeAddress)
           .filter(addr => Object.values(addr).some(value => String(value).trim() !== '')),
@@ -420,6 +428,14 @@ export default function Drivers() {
           {BLOOD_TYPES.map(type => <option key={type}>{type}</option>)}
         </select>
         {errors.blood_type && <div className="field-error">{errors.blood_type}</div>}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="driver-organ_donor" className="form-label">Organ Donor</label>
+        <select id="driver-organ_donor" className="form-control" name="organ_donor" value={form.organ_donor} onChange={e => setForm(f => ({ ...f, organ_donor: Number(e.target.value) }))}>
+          <option value={0}>No</option>
+          <option value={1}>Yes</option>
+        </select>
       </div>
 
       <div className="form-group full">
